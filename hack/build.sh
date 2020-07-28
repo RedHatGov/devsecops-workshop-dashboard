@@ -6,7 +6,7 @@ LOCATION=${2:local}
 QUAY_PROJECT=${3:-redhatgov}
 
 cd $(dirname $(realpath $0))/..
-if [ -f .quay_creds -a -z "$1" ]; then
+if [ -f .quay_creds -a -z "$2" ]; then
   LOCATION=quay
   . .quay_creds
 fi
