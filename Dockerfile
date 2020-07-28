@@ -1,4 +1,4 @@
-FROM quay.io/akrohg/workshop-dashboard-crw:latest
+FROM quay.io/redhatgov/workshop-dashboard:latest
 ARG PIPELINE_STYLE
 
 USER root
