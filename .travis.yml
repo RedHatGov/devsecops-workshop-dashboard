@@ -6,6 +6,8 @@ services:
 env:
   - PIPELINE_STYLE=tekton
   - PIPELINE_STYLE=jenkins
+script:
+  - hack/build.sh -l local -t $PIPELINE_STYLE -- --build-arg=PIPELINE_STYLE=$PIPELINE_STYLE
 deploy:
   provider: script
   script: bash hack/build.sh -l quay -t $PIPELINE_STYLE -- --build-arg=PIPELINE_STYLE=$PIPELINE_STYLE
