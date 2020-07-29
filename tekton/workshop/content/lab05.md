@@ -1,26 +1,27 @@
 
-# Introduction 
+# Introduction
 
 Before we dive into starting to build our pipeline, let's review some of the key concepts in Tekton
 
 # Key Concepts
 
-
 ## Tasks and Steps, and Task Runs
 
 So, here are the definitions:
-* Step : Run commands in a container with volumes, env vars, etc
-* Task : a list of steps that run sequentially in the same pod. 
-* Task Run : an invocation of a task with inputs and outputs
 
-A few things to highlight from the definitions above: 
-* Steps are fairly low-level : they basically say "here, run this container, and then run this command in this container". 
-* Steps in a task cannot take their own parameters beyond what's pre-defined in the Step specification. 
+* Step: Run commands in a container with volumes, env vars, etc
+* Task: a list of steps that run sequentially in the same pod.
+* TaskRun: an invocation of a task with inputs and outputs
+
+A few things to highlight from the definitions above:
+
+* Steps are fairly low-level: they basically say "here, run this container, and then run this command in this container".
+* Steps in a task cannot take their own parameters beyond what's pre-defined in the Step specification.
 * The way you make the Task reusable is by taking in the values that the steps might need, and move them with parameters. In order to refer to the parameters in the body of the task (e.g. in steps) is by using the special `$(params.my-param-name)` syntax (if you wanted to use the `my-param-name`)
 * Task runs are the runtime representation of a Task - where the task and the actual parameters with which the task was called with. The task runs provide the input to the tasks to execute with, e.g. parameters, resources, serivce accounts, workspaces
-* Also note that because Steps in a Task execute in the same pod, they are able to share some local resources. 
-  
-Let's look at an example : 
+* Also note that because Steps in a Task execute in the same pod, they are able to share some local resources.
+
+Let's look at an example:
 
 ```yaml
 kind: Task
@@ -43,7 +44,8 @@ There is quite a bit more to tasks, the gory details (such as resources, workspa
 
 ## Pipelines and Pipeline Runs
 
-Let's start with some definitions: 
+Let's start with some definitions:
+
 * Pipelines define the graph of task execution. They can also be parametrized with parameters, resources, and workspaces that need to be provided
 * Pipeline Runs are again the construct that provides the actual values with which the pipelines are to be executed. The pipeline run executes the pipeline to completion, and creates TaskRuns that execute the tasks in the pipelines. Because different Tasks execute in different pods, they could run on different nodes, and if they need to share resources, they need to use a construct like a `workspace`
 
@@ -76,14 +78,14 @@ spec:
 
 ```
 
-The example pipeline above only has a single task. It defines the resources that it needs (a git repo and an image to output) and passes those values to the single task named `s2i-eap-7` that it executes with the parameters that it's given. 
+The example pipeline above only has a single task. It defines the resources that it needs (a git repo and an image to output) and passes those values to the single task named `s2i-eap-7` that it executes with the parameters that it's given.
 
 ## Pipeline Resources
 
+The Tekton developers recognized that there are some some common elements of cloud native pipelines that are somewhat like parameters, but they are a bit more complex. Pipeline resources are inputs and outputs to tasks and pipelines. In Tasks and Pipelines they are defined by name and type. The example Pipeline above requires the following to be given to it:
 
-The Tekton developers recognized that there are some some common elements of cloud native pipelines that are somewhat like parameters, but they are a bit more complex. Pipeline resources are inputs and outputs to tasks and pipelines. In Tasks and Pipelines they are defined by name and type. The example Pipeline above requires the following to be given to it: 
-* An `app-git` pipeline resource, which is a Git repository. The same resource is then passed on to the `s2i-eap-7` task. 
-* An `app-image` pipeline resource, which is an image reference. That image reference is passed to the `s2i-eap-7` task, and is the destination where the created image will be pushed. 
+* An `app-git` pipeline resource, which is a Git repository. The same resource is then passed on to the `s2i-eap-7` task.
+* An `app-image` pipeline resource, which is an image reference. That image reference is passed to the `s2i-eap-7` task, and is the destination where the created image will be pushed.
 
 The most commonly used Pipeline Resources in Tekton are Git and Image resources, but there are others : e.g. Pull Requests, Cluster Resources, etc. The gory details are at [the Pipeline Resources Docs on GitHub](https://github.com/tektoncd/pipeline/blob/master/docs/resources.md)
 
@@ -142,37 +144,37 @@ spec:
 
 ## Workspaces
 
-Workspaces provide for a mechanism for sharing data between tasks. Remember that each Task is started in a different pod, so if two tasks need to share some resources (e.g. some storage for the Maven process to download all dependencies that can be reused later on), a workspace comes in. 
+Workspaces provide for a mechanism for sharing data between tasks. Remember that each Task is started in a different pod, so if two tasks need to share some resources (e.g. some storage for the Maven process to download all dependencies that can be reused later on), a workspace comes in.
 
-Workspaces are similar to Pipeline Resources in that they are defined as "parameters" to Tasks and Pipelines, and need to be provided when a TaskRun or a PipelineRun is to be created 
+Workspaces are similar to Pipeline Resources in that they are defined as "parameters" to Tasks and Pipelines, and need to be provided when a TaskRun or a PipelineRun is to be created
 
 ## Others : Task Results, Triggers, Conditions
 
-There is a lot more to learn in Tekton, but we will skip these for now. 
+There is a lot more to learn in Tekton, but we will skip these for now.
 
 # Tools
 
-As we saw so far, all parts of Tekton can be created and used through YAML. That is fantastic when we're looking to automate something, but it's a bit less than idea for day-to-day usage. 
+As we saw so far, all parts of Tekton can be created and used through YAML. That is fantastic when we're looking to automate something, but it's a bit less than idea for day-to-day usage.
 
 For most of our work we will be using a combination of YAML and the OpenShift console, but all options are available
 
 ## OpenShift Console
-The OpenShift Console provides some initial support for creating Pipelines directly in the OpenShift UI. 
+
+The OpenShift Console provides some initial support for creating Pipelines directly in the OpenShift UI.
 
 ![Web UI Console](images/console_pipeline_creation.png)
 
-Similarly, if you try to start a Pipeline that requires some Pipeline Resources, the UI will prompt you to provide the necessary resources: 
+Similarly, if you try to start a Pipeline that requires some Pipeline Resources, the UI will prompt you to provide the necessary resources:
 
 ![Pipeline Run Resources](images/pipelinerun_resources_ui.png)
 
+While the majority of Tekton components are still defined in YAML, this area is quickly improving.
 
-While the majority of Tekton components are still defined in YAML, this area is quickly improving. 
-
-*One Caveat* : in OpenShift 4.4, the UI does not yet provide a way to pass in a Workspace to a pipeline that is defined with one. For that reason, if you are working with a pipeline that needs a Workspace, at least the initial Pipeline Run needs to be created in YAML, and then follow-up Pipeline Runs can just be kicked off using the "Rerun" option on Pipeline Runs. 
+*One Caveat*: in OpenShift 4.4, the UI does not yet provide a way to pass in a Workspace to a pipeline that is defined with one. For that reason, if you are working with a pipeline that needs a Workspace, at least the initial Pipeline Run needs to be created in YAML, and then follow-up Pipeline Runs can just be kicked off using the "Rerun" option on Pipeline Runs.
 
 ## Command line tools
 
-Finally, any self-respecting project these days has to have a set of command line tools for simplifying the interactions. In this case, the tool is called `tkn` and is available to download from the "Command Line Tools" sub-menu of the Help/Question Mark menu in the upper right corner of the OpenShift Console. 
+Finally, any self-respecting project these days has to have a set of command line tools for simplifying the interactions. In this case, the tool is called `tkn` and is available to download from the "Command Line Tools" sub-menu of the Help/Question Mark menu in the upper right corner of the OpenShift Console.
 
 ![Command line tools popup](images/cmd_line_tools_help.png)
 
