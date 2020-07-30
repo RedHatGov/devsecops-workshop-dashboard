@@ -8,7 +8,7 @@ First, ensure that the pulldown in the very top left of the embedded OpenShift W
 
 ![OCP Admin Project View](images/ocp_devsecops.png)
 
-You will see the project dashboard which shows the "common infrastructure" for our Secure Software delivery pipeline. If you navigate to the "Deployments" section, you will see deployments for each of the following software components:
+You will see the project dashboard which shows the "common infrastructure" for our Secure Software delivery pipeline. If you navigate to the "Deployments" section underneath "Workloads" on the left-hand nav bar, you will see deployments for each of the following software components:
 
 - codeready - CodeReady Workspaces is a browser-based development environment based on Eclipse Che
 - gitea-server - Gitea is an open source git server written in Go.

@@ -25,6 +25,10 @@ This workshop is provisioned with a special dashboard that gives you easy access
 
 In the Terminal tab, check to see what projects you have access to:
 
+#### NOTE: Execution blocks
+
+Throughout this workshop, sometimes a code block will be present with a small play button on the right-hand side. When you see these blocks, you can either click the button to execute it in your terminal pane automatically, or copy and paste or type the command manually. It's up to you!
+
 ```execute
 oc get projects
 

@@ -1,6 +1,3 @@
-
-# Introduction
-
 Before we dive into starting to build our pipeline, let's review some of the key concepts in Tekton
 
 # Key Concepts
@@ -154,52 +151,50 @@ There is a lot more to learn in Tekton, but we will skip these for now.
 
 # Tools
 
-As we saw so far, all parts of Tekton can be created and used through YAML. That is fantastic when we're looking to automate something, but it's a bit less than idea for day-to-day usage.
+As we saw so far, all parts of Tekton can be created and used through YAML. That is fantastic when we're looking to automate something, but it's a bit less than ideal for day-to-day usage.
 
-For most of our work we will be using a combination of YAML and the OpenShift console, but all options are available
+For most of our work we will be using a combination of YAML and the OpenShift console, but either option is available for most steps, and YAML can be supplied directly via the CLI, from an automation tool that knows how to work with the Kubernetes API like Ansible, or from another Kubernetes-native tool like ArgoCD.
 
 ## OpenShift Console
 
-The OpenShift Console provides some initial support for creating Pipelines directly in the OpenShift UI.
+The OpenShift Console provides support for creating Pipelines directly in the OpenShift UI.
 
 ![Web UI Console](images/console_pipeline_creation.png)
 
-Similarly, if you try to start a Pipeline that requires some Pipeline Resources, the UI will prompt you to provide the necessary resources:
+If you try to start a Pipeline that requires some Pipeline Resources, the UI will prompt you to provide the necessary resources:
 
 ![Pipeline Run Resources](images/pipelinerun_resources_ui.png)
 
-While the majority of Tekton components are still defined in YAML, this area is quickly improving.
-
-*One Caveat*: in OpenShift 4.4, the UI does not yet provide a way to pass in a Workspace to a pipeline that is defined with one. For that reason, if you are working with a pipeline that needs a Workspace, at least the initial Pipeline Run needs to be created in YAML, and then follow-up Pipeline Runs can just be kicked off using the "Rerun" option on Pipeline Runs.
+While the majority of Tekton components are still defined in YAML (through the CLI, pasted into the web console, or applied through the API otherwise), this is quickly improving in OpenShift Pipelines and Tekton.
 
 ## Command line tools
 
-Finally, any self-respecting project these days has to have a set of command line tools for simplifying the interactions. In this case, the tool is called `tkn` and is available to download from the "Command Line Tools" sub-menu of the Help/Question Mark menu in the upper right corner of the OpenShift Console.
+Finally, any self-respecting project these days has to have a set of native command line tools for simplifying the interactions. In this case, the tool is called `tkn` and is available to download from the "Command Line Tools" sub-menu of the Help/Question Mark menu in the upper right corner of the OpenShift Console. This command has been preinstalled into the "Terminal" pane of your dashboard.
 
 ![Command line tools popup](images/cmd_line_tools_help.png)
 
 ![Tkn Download](images/cmd_line_tools_download.png)
 
-Here's an example of showing the available pipelines in the user1-cicd project
+Here's an example you can run showing the available pipelines in your CI/CD project:
 
-```shell
-$ tkn pipeline ls -n user1-cicd
-NAME                           AGE           LAST RUN                              STARTED       DURATION    STATUS
-app-s2i-build                  8 hours ago   app-s2i-build-fnu9n4                  3 hours ago   1 minute    Succeeded
-build-test-deploy-app-to-dev   8 hours ago   build-test-deploy-app-to-dev-9bdjue   3 hours ago   3 minutes   Succeeded
-deploy-app-to-stage            8 hours ago   ---                                   ---           ---         ---
+```execute
+tkn pipeline ls -n %username%-cicd
 
 ```
 
-Similarly, kicking off a pipeline offers prompts for providing the required Pipeline Resources:
+Kicking off a PipelineRun offers prompts for providing the required Pipeline Resources, or you can supply them as parameters:
 
-```bash
-$ tkn pipeline start app-s2i-build -n user1-cicd
-? Choose the git resource to use for app-git:  [Use arrows to move, type to filter]
-> source (https://gitea-server-devsecops.apps.cluster-nisky-73f7.nisky-73f7.example.opentlc.com/user1/openshift-tasks.git#dso4)
-? Choose the image resource to use for app-image:  [Use arrows to move, type to filter]
-  image (quay.apps.cluster-nisky-73f7.nisky-73f7.example.opentlc.com/user1/openshift-tasks)
-> internal-reg-image (image-registry.openshift-image-registry.svc.cluster.local:5000/user1-cicd/openshift-tasks:latest)
-  create new "image" resource
-Pipelinerun started: app-s2i-build-run-f2j6t
+```execute
+pipeline_run_output=$(tkn pipeline start app-s2i-build -n %username%-cicd  \
+                      -r app-git=source -r app-image=image)
+echo "$pipeline_run_output"
+pipeline_run=$(echo "$pipeline_run_output" | awk '/^PipelineRun started:/{print $3}')
+
+```
+
+You can monitor the progress of those runs directly from the CLI as well:
+
+```execute
+tkn pipelinerun logs $pipeline_run -f -n %username%-cicd
+
 ```
