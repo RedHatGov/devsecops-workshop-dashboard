@@ -20,7 +20,7 @@ An example of what that process might look like:
 * A new pipeline (deploy-to-stage) is kicked off to deploy the approved artifact (at revision #2)
 
 In order to accomplish this, we will need to do the following:
-* Modify the `tekton-tasks` pipeline to capture the git hash of the code that it is deploying. 
+* Modify the `tekton-tasks` pipeline and add the `git-version` task to capture the git hash of the code that it is deploying, then pass it on to the other tasks that need that hash as a parameter
 * Modify the `tekton-tasks` pipeline to tag the image that it creates with the git hash that it has deployed
 * Create a new pipeline, `stage-tekton-tasks` to accept the approved version of the dev image to deploy, and to promote that version to the Stage environment. 
 
@@ -83,7 +83,7 @@ Here is the modified `create-image` task. Notable items:
  apiVersion: tekton.dev/v1beta1
   kind: Task
   metadata:
-    name: create-jboss-app-image
+    name: create-image
   spec:
     params:
       - default: tasks
@@ -212,9 +212,9 @@ Here's the updated version of the `deploy-to-dev` task. Notable items:
 
 ```
 
-Here's the modified `tasks-pipeline` would look like (unmodified sections are abbreviated, and the modified sections are included in full, replace the <user#> token with your username). A few notable items:
+Here's the modified `tasks-pipeline` would look like (unmodified sections are abbreviated, and the modified sections are included in full). A few notable items:
 * The `git-version` task is not marked to run after any particular task. Based on the Tekton documentation, Tekton will schedule it to run before any tasks that require its results. 
-* 
+  
 ```yaml
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
@@ -254,7 +254,7 @@ spec:
           - name: app_name
             value: tekton-tasks
           - name: dev_project
-            value: <user#>-dev
+            value: %username%-dev
           - name: artifact_path
             value: 'org/jboss/quickstarts/eap/jboss-tasks-rs/7.0.0-SNAPSHOT/jboss-tasks-rs-7.0.0-SNAPSHOT.war'
           - name: gitsha
@@ -278,7 +278,7 @@ spec:
           - name: app_name
             value: tekton-tasks
           - name: dev_project
-            value: <user#>-dev
+            value: %username%-dev
           - name: gitsha
             value: "$(tasks.git-rev.results.gitsha)"
       resources:
@@ -292,15 +292,13 @@ spec:
 
 With all these changes we can re-run our `tasks-pipeline` and observe the results. Notable items:
 * The `git-rev` task gets run in parallel with the `build-app` task because it doesn't have any other dependencies it needs to wait for. It is truly beautiful that Tekton relieves us as the pipeline creators from figuring out the details of how to parallelize this work
-* There is now a tag in the `
 * The `deploy-to-dev` task runs the additional step and outputs the gitsha of the version it successfully deployed
 
 ![Full Dev pipeline results](images/full-pipeline-results.png)
 
 
 # Create a `stage-tekton-tasks` pipeline
-
-We've already done this work, so we can easily jump into creating a new task and a new pipeline to make this happen. 
+This is the task that will take in a parameter from the user that specifies the verified version that needs to be deploy to the stage environment. Presumable, this value will be the version of the app that has been tested and validated, and is read for deployment. We've already done this work, so we can easily jump into creating a new task and a new pipeline to make this happen. 
 ```yaml
   apiVersion: tekton.dev/v1beta1
   kind: Task
@@ -369,7 +367,7 @@ We've already done this work, so we can easily jump into creating a new task and
 
 ```
 
-Then, we can add a new pipeline that uses this task (replace the <user#> token with your username):
+Then, we can add a new pipeline that uses this task:
 ```yaml
   apiVersion: tekton.dev/v1alpha1
   kind: Pipeline
@@ -390,18 +388,18 @@ Then, we can add a new pipeline that uses this task (replace the <user#> token w
           - name: app_name
             value: tekton-tasks
           - name: dev_project
-            value: <user#>-dev
+            value: %username%-dev
           - name: stage_project
-            value: <user#>-stage
+            value: %username%-stage
           - name: app_revision
             value: $(params.app_version)
 ```
 
-Review the oupput of the `tekton-tasks` pipeline - the last step in the last task announces the gitsha with which the image deployed in dev was tagged with. Take that git sha and run the `stage-tekton-tasks` pipeline with that as a parameter (replace the <gitsha_output> token with the value from your dev pipeline):
+Review the output of the `tekton-tasks` pipeline - the last step in the last task announces the gitsha with which the image deployed in dev was tagged with. Take that git sha and run the `stage-tekton-tasks` pipeline with that as a parameter (replace the <gitsha_output> token with the value from your dev pipeline):
 ```bash
 tkn pipeline start --param app_version=<gitsha_output> stage-tekton-tasks --showlog
 ```
-When this pipeline completes running, you should find the same resources in the <user#>-stage project and will be able to open the route to the app and see it running
+When this pipeline completes running, you should find the same resources in the %username%-stage project and will be able to open the route to the app and see it running
 
 # Conclusion
 

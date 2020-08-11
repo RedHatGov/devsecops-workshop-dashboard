@@ -8,9 +8,9 @@ In this section, we will add the "Code Analysis" stage into the pipeline
 
 We will leverage the Maven Sonar plugin to run SonarQube scanning against our source code.
 
-SonarQube is an open source static code analysis tool that we can use to automate running security scans against your source code to further improve the security of your application.  Every time you check-in code, SonarQube will scan the quality and perform a threat analysis of that code.
+SonarQube is an open source static code analysis tool that we can use to automate running security scans against your source code to further improve the security of your application.  Every time we run the tool, SonarQube will scan the quality and perform a threat analysis of that code.
 
-We leverage the sonarqube maven plugin and specify the maven goal "sonar:sonar" to run our project leveraging the sonarqube api.
+We leverage the sonarqube maven plugin and specify the maven goal `sonar:sonar` to run our project leveraging the sonarqube api.
 
 SonarQube's security rules originate from these standards:
 
@@ -86,7 +86,7 @@ To get the URL of the SonarQube dashboard, run the command:
 ```bash
 oc get route sonarqube -n devsecops
 NAME        HOST/PORT                                                                    PATH   SERVICES    PORT    TERMINATION     WILDCARD
-sonarqube   sonarqube-devsecops.apps.cluster-nisky-0450.nisky-0450.example.opentlc.com          sonarqube   <all>   edge/Redirect   None
+sonarqube   sonarqube-devsecops.%cluster_subdomain%          sonarqube   <all>   edge/Redirect   None
 
 ```
 

@@ -22,7 +22,7 @@ There are some other components for our pipeline that live inside other projects
 
 # The Flow of the Trusted Software Supply Chain
 
-You may ask, "How am I going to build a CI/CD pipeline if I don't have a tool like Jenkins that builds CI/CD pipelines?" OpenShift Pipelines is the CI/CD tool (based on the upstream Tekton project) that will execute the project. We'll be using using cloud-native container-based tooling and the power of the Kubernetes container orchistrator to do execute our steps.
+You may ask, "How am I going to build a CI/CD pipeline if I don't have a tool like Jenkins that builds CI/CD pipelines?" OpenShift Pipelines is the CI/CD tool (based on the upstream Tekton project) that will execute the project. We'll be using using cloud-native container-based tooling and the power of the Kubernetes container orchestrator to do execute our steps.
 
 Below are the main steps of the "Deploy to Dev" pipeline:
 
@@ -30,11 +30,11 @@ Below are the main steps of the "Deploy to Dev" pipeline:
 - Compile and packages the code using Maven
 - Execute the JUnit tests that exist in the same source tree
 - Analyze the source code for vulnerabilities, bugs, and bad patterns using SonarQube
-- Package the application as a WAR file, then pushe the WAR artifact to the Nexus Repository manager
-- Create a container image based the JBoss EAP runtime image and the content of the WAR artifact, taging it with the hash of the git revision
+- Package the application as a WAR file, then push the WAR artifact to the Nexus Repository manager
+- Create a container image based the JBoss EAP runtime image and the content of the WAR artifact, tagging it with the hash of the git revision
 - Deploy the newly created container image into the %username%-dev project
 
-At this point, the first part of the pipeline stops to allow for the opportunity to test the application that is deployed. The verification of the deployed application can involve many different aspects : manual verification, execution of some integration tests against the running system, etc. We have intentionally not automated any tests here to simulate a manual quality check and enable you to explore this part of the pipeline.
+At this point, the first part of the pipeline only deploys the application to the Dev environment so that it can be tested/verified there. The verification of the deployed application can involve many different aspects : manual verification, execution of some integration tests against the running system, etc. We have intentionally not automated any tests here to simulate a manual quality check and enable you to explore this part of the pipeline.
 
 When the verification is complete, the "Deploy to Stage" pipeline will perform the following steps:
 

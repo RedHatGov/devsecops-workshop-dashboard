@@ -16,7 +16,7 @@ However, if we want to create a simple webhook, at the simplest level we need th
 The goal of setting this up is to trigger a new pipeline run of our `tekton-tasks` pipeline every time someone commits to our Gitea repository. While this can be made quite much more customizable and extensible, we will start with the simplest thing possible. 
 
 ## Configure Tekton triggers objects
-* First, create a TriggerTemplate. If you inspect the prior runs of the `tasks-pipeline`, the PipelineRuns that we created were pretty simple. They didn't use any parameters, so that makes the PipelineRun template below as simple as it can be. Switch to the `<user#>-cicd` project and add the YAML below. 
+First, create a TriggerTemplate. If we inspect the prior runs of the `tasks-pipeline`, the PipelineRuns that we created were pretty simple. They didn't use any parameters, so that makes the PipelineRun template below as simple as it can be. Switch to the `%username%-cicd` project and add the YAML below. 
 
 
 ```yaml
@@ -45,7 +45,7 @@ spec:
 
 ```
 
-* Then, we need a trigger binding. Again, because we're not mapping any parameters from the incoming request, this is basically an empty object. Create the YAML object below in the `<user#>-cicd` project
+* Then, we need a trigger binding. Again, because we're not mapping any parameters from the incoming request, this is basically an empty object. Create the YAML object below in the `%username%-cicd` project
 
 ```yaml
 apiVersion: triggers.tekton.dev/v1alpha1
@@ -54,6 +54,7 @@ metadata:
   name: dev-tekton-tasks-trigger-binding
 spec: {}
 ```
+
 * We will create the `EventListener` below. As soon as this is created, Tekton creates a service named `el-<event-listener-name>` and a related pod to serve requests to this service. For the `dev-tekton-event-listener` below, the service will be named `el-dev-tekton-event-listener`. Note that we are using a trivial secret check using an interceptor to only allow incoming requests with the provided value to trigger our pipeline
   
 ```yaml
@@ -73,9 +74,9 @@ spec:
       template:
         name: dev-tekton-tasks-trigger-template
 ```
-In order to make this service available externally to the cluster, we will expose the service (please replace the <user#> token with your username): 
+In order to make this service available externally to the cluster, we will expose the service : 
 ```bash
-$ oc expose svc el-dev-tekton-event-listener -n <user#>-cicd
+$ oc expose svc el-dev-tekton-event-listener -n %username%-cicd
 ```
 
 ## Add a Webhook definition in Gitea
@@ -86,18 +87,18 @@ The last step is to configure Gitea to invoke this webhook
 ```bash
 $ oc get route gitea-server -n devsecops
 NAME           HOST/PORT                                                                       PATH   SERVICES       PORT    TERMINATION     WILDCARD
-gitea-server   gitea-server-devsecops.apps.cluster-nisky-0450.nisky-0450.example.opentlc.com          gitea-server   <all>   edge/Redirect   None
+gitea-server   gitea-server-devsecops.%cluster_subdomain%          gitea-server   <all>   edge/Redirect   None
 
 ```
 
-* Navigate to `Gitea` and log in using your <user#> username. Click on your `openshift-tasks` repository, navigate to the `Settings` page, and on that page click on the `Webhooks` tab. 
+* Navigate to `Gitea` and log in using your `%username%` username. Click on your `openshift-tasks` repository, navigate to the `Settings` page, and on that page click on the `Webhooks` tab. 
 ![Gitea Webhook Settings](images/gitea_settings_webhook.png)
 
 Use `oc` to extract the URL of the new route that we created for the Tekton EventListener:
 ```bash
 $ oc get route el-dev-tekton-event-listener 
 NAME                           HOST/PORT                                                                                        PATH   SERVICES                       PORT            TERMINATION   WILDCARD
-el-dev-tekton-event-listener   el-dev-tekton-event-listener-user1-cicd.apps.cluster-nisky-0450.nisky-0450.example.opentlc.com          el-dev-tekton-event-listener   http-listener                 None
+el-dev-tekton-event-listener   el-dev-tekton-event-listener-%username%-cicd.%cluster_subdomain%          el-dev-tekton-event-listener   http-listener                 None
 ```
 * Click on the `Add Webhook` button and choose `Gitea` as the webhook type. On the resulting page, fill in the `el-dev-tekton-event-listener` route URL in the `Target URL` field and `secret1234` in the `Secret` field - everything else can stay as default. Click the `Add Webhook` button to save.  
 
@@ -170,6 +171,7 @@ spec:
       template:
         name: stage-tekton-tasks-trigger-template
 ```
+
 * Test the newly created Webhook
   
 After creating these objects, create the `Route` for the `el-stage-tekton-event-listener` service. 
@@ -182,14 +184,14 @@ Get the URL for the newly exposed Route
 $ oc get route el-stage-tekton-event-listener 
 ```
 
-In order to simulate that a new app version was created, we will simply tag the `tekton-tasks` image stream with a new value that we will then use as our `app_ver` parameter, as the Dev pipeline would do exactly the same using the gitsha of the latest commit (please replace the <user#> token with your username):
+In order to simulate that a new app version was created, we will simply tag the `tekton-tasks` image stream with a new value that we will then use as our `app_ver` parameter, as the Dev pipeline would do exactly the same using the gitsha of the latest commit:
 ```bash
-$ oc tag tekton-tasks:latest tekton-tasks:foobar1 -n <user#>-dev
+$ oc tag tekton-tasks:latest tekton-tasks:foobar1 -n %username%-dev
 ```
 
-Now, trigger the webhook passing `foobar1` as the `app_ver` parameter and observe that the `stage-tekton-tasks` pipeline is running. Note that if you don't include the `secret` value in the body or include a different value, the webhook will not trigger the pipeline. 
+Now, trigger the webhook passing `foobar1` as the `app_ver` parameter and observe that the `stage-tekton-tasks` pipeline is running. Note that if we don't include the `secret` value in the body or include a different value, the webhook will not trigger the pipeline. 
 ```bash
-$curl -X POST -d '{"app_ver":"foobar1", "secret":"secret1234"}' http://el-stage-tekton-event-listener-user1-cicd.apps.cluster-nisky-0450.nisky-0450.example.opentlc.com/
+$curl -X POST -d '{"app_ver":"foobar1", "secret":"secret1234"}' http://el-stage-tekton-event-listener-%username%-cicd.%cluster_subdomain%/
 ```
 ![Stage pipeline webhook](images/webhook_stage_pipeline.png)
 

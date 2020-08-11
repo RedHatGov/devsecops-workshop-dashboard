@@ -16,7 +16,7 @@ The easiest way to deploy an application is using the Developer Console in OpenS
 * Switch to the Developer console (from the upper-left corner navigation) and click the "+Add" button and choose the "Container Image" tile
 ![Developer Console Add](images/developer_console_add.png)
 
-* Choose the "Image Stream tag from internal registry" and choose the "<user#>-dev" project in the Projects dropdown, then choose the `tekton-tasks` in the ImageStreams (which is pre-populated because we created that image stream in the previous stage) and the `latest` tag from the Tag dropdown. Leave the default and hit the `Create` button
+* Choose the "Image Stream tag from internal registry" and choose the "%username%-dev" project in the Projects dropdown, then choose the `tekton-tasks` in the ImageStreams (which is pre-populated because we created that image stream in the previous stage) and the `latest` tag from the Tag dropdown. Leave the default and hit the `Create` button
 ![Developer Console Deploy Image](images/developer_console_image_from_intreg.png)
 
 The UI redirects to the `Topology` screen where we can see the application start very quickly. 
@@ -35,20 +35,20 @@ First off, we will need to do some cleanup of our manual work. Although this fee
 * A Service named `tekton-tasks`
 * A Route named `tekton-tasks`
 
-In order to clean that up, we can use the command line (remember to replace the <user#> token with your username)
+In order to clean that up, we can use the command line
 ```
-oc delete deployment tekton-tasks -n <user#>-dev
-oc delete service tekton-tasks -n <user#>-dev
-oc delete route tekton-tasks -n <user#>-dev
+oc delete deployment tekton-tasks -n %username%-dev
+oc delete service tekton-tasks -n %username%-dev
+oc delete route tekton-tasks -n %username%-dev
 ```
 
-Then, if we wanted to deploy a new instance of the application based on the image we wanted, we can run (remember to replace the <user#> token with your username):
-'''bash
-oc new-app --image-stream=tekton-tasks:latest -n  <user#>-dev
-oc expose svc tekton-tasks -n <user#>-dev
-'''
+Then, if we wanted to deploy a new instance of the application based on the image we wanted, we can run :
+```bash
+oc new-app --image-stream=tekton-tasks:latest -n  %username%-dev
+oc expose svc tekton-tasks -n %username%-dev
+```
 
-Re-running the commands below re-deploys the application and it's back to running
+Re-running the commands above re-deploys the application and it's back to running
 
 ## Create deploy-image Task
 
@@ -99,7 +99,7 @@ Now that we have the actions that need to occur, we can proceed to create a new 
           oc rollout latest dc/$(params.app_name) -n  $(params.dev_project)
 ```
 
-We can test the successful execution of the task from the command line (remember to replace the <user#> token with your username):
+We can test the successful execution of the task from the command line :
 ```bash
 tkn task start --inputresource source=tasks-source git-version --showlog 
 ```
@@ -108,7 +108,7 @@ We can experiment with this Task to make sure that it succeeds under different c
 
 ## Add task to pipeline
 
-Now that we've seen the task succeed, we can add it to our pipeline and kick off a new pipeline run (remember to replace the <user#> token with your username):
+Now that we've seen the task succeed, we can add it to our pipeline and kick off a new pipeline run:
 ```yaml
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
@@ -141,7 +141,7 @@ spec:
           - name: app_name
             value: tekton-tasks
           - name: dev_project
-            value: <user#>-dev
+            value: %username%-dev
       resources:
         inputs:
           - name: source
@@ -152,7 +152,7 @@ spec:
 ```
 ![Deploy to Dev Pipeline](images/deploy_to_dev_pipeline_results.png)
 
-We can observe that the application is now running in the <user#>-dev project
+We can observe that the application is now running in the %username%-dev project
 
 # Conclusion
 

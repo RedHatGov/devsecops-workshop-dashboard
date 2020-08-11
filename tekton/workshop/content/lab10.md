@@ -75,11 +75,11 @@ Now we can view the contents of the Nexus repository. First, let's get the URL o
 ```bash
 oc get route -n devsecops nexus
 NAME    HOST/PORT                                                                PATH   SERVICES   PORT   TERMINATION   WILDCARD
-nexus   nexus-devsecops.apps.cluster-nisky-0450.nisky-0450.example.opentlc.com          nexus      8081                 None
+nexus   nexus-devsecops.%cluster_subdomain%          nexus      8081                 None
 
 ```
 
-With the Nexus route URL in hand, navigate to Nexus, click the Sign-In button in the upper-right corner, log in with your credentials (you will be asked tochange your password through the wizard - just keep the same credentials as before). Then, Navigate to Browse from the left-hand navigation menu, and click into the `maven-snapshots` repository. You will see the SNAPSHOT artifacts that have been created so far: 
+With the Nexus route URL in hand, we can navigate to Nexus, we can click the `Sign-In` button in the upper-right corner, and log in with the assigned credentials (you will be asked to change your password through the wizard - just keep the same credentials as before). Then, we can navigate to `Browse` from the left-hand navigation menu, and click into the `maven-snapshots` repository. Below is the SNAPSHOT artifacts that have been created so far: 
 
 ![Nexus artifacts](images/nexus_artifacts_tasks.png)
 

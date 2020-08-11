@@ -1,4 +1,4 @@
-In this lab we will take our first steps in starting our DevSecOps pipeline. In doing so, we will not only end up with a working pipeline that performs a basic action on our project, but we will also discover a few ways to experiment and work with and learn about Tekton
+In this lab we will take our first steps in starting our DevSecOps pipeline. In doing so, we will not only end up with a working pipeline that performs a basic action on our project, but we will also discover a few ways to experiment with, work with, and learn about Tekton
 
 # First Steps - Create a Resource for the Project
 
@@ -60,7 +60,7 @@ spec:
   params:
     - name: url
       value: >-
-        https://<gitea-server-route-url>/user1/openshift-tasks.git
+        https://<gitea-server-route-url>/%username%/openshift-tasks.git
     - name: revision
       value: dso4
   type: git
@@ -70,16 +70,16 @@ The additional options for specifying the Git Pipeline Resource are on the [Tekt
 
 ## Explore Tasks Catalog
 
-Then, the Tasks application is built using Maven, so we will need to find a container that has maven inside so that we can use it to build our application.
+The Tasks application is built using Maven, so we will need to find a container that has maven inside so that we can use it to build our application.
 
 The first place we can look is the Cluster Task catalog that exists in OpenShift.
 
 ![Maven Cluster Task](images/maven_clustertask.png)
 
-So, let's see what this ClusterTask is all about.
+Let's see what this ClusterTask is all about.
 
 ```bash
-[akochnev@localhost workshops]$ tkn clustertask describe maven
+$ tkn clustertask describe maven
 Name:   maven
 
 📨 Input Resources
@@ -185,15 +185,16 @@ $ tkn tr logs maven-example-2pcnw
 container step-mvn-goals has failed  : [{"key":"StartedAt","value":"2020-07-20T22:08:06Z","resourceRef":{}}]
 ```
 
-So, while the ClusterTask seemed like a decent first pass at how to build our app, it appears this might require a bit more knowledge to use this ClusterTask (e.g. we will need to have a prior task that puts the Git repo into the `source` workspace). Let's put this on ice for a bit and explore.
+So, while the ClusterTask seemed like a decent first pass at how to build our app, it appears this might require a bit more knowledge to use this ClusterTask (e.g. we will need to have a prior task that puts the Git repo into the `source` workspace). Let's put this on ice for a bit and explore some more.
 
 # Local Containers: Experimentation and Feedback loops
 
 OK, now we're back to the drawing board - we couldn't use the ClusterTask out of the box with our existing knowledge, but let's see what we can learn from it.
 
-First off, let's talk about the importance of feedback loops. As an engineer, you always want to have a short and tight feedback loop. The tighter the feedback loop, the faster you could experiment, and then the faster you could learn. From experience, the tightest feedback loop happens when engineers can play with things locally on their workstations. How could we do that with Tekton ? Luckily, since Tekton is based entirely on running containers, we have a way !
+First off, let's talk about the importance of feedback loops. As engineers, we always want to have a short and tight feedback loop. The tighter the feedback loop, the faster we could experiment, and then the faster we could learn. From experience, the tightest feedback loop happens when engineers can play with things locally on their workstations. How could we do that with Tekton ? Luckily, since Tekton is based entirely on running containers, we have a way !
 
-First of all, we can see exactly what container image the ClusterTask uses : `gcr.io/cloud-builders/mvn` . So, if we're curious, we pull down that image and explore it using it just like any other container. We will check what version of Maven is in there using `mvn -version`, and then we will `exit`:
+Re-reviewing the content of the `maven` ClusterTask, we can see exactly what container image the ClusterTask uses : `gcr.io/cloud-builders/mvn` . If we're curious, we pull down that image and explore it by using it just like any other container. We will check what version of Maven is in there using `mvn -version`, and then we will `exit`:
+* The `-it` argument to `podman` gives us an "interactive tty/shell", whereas the `--entrypoint` argument allows us to override what will be executed when the container starts. 
 
 ```shell
 podman run -it --entrypoint /bin/bash gcr.io/cloud-builders/mvn
@@ -212,10 +213,10 @@ bash-4.2# exit
 exit
 ```
 
-OK, so this container uses Java 14, and our tasks app uses Java 8. This might be an issue, but we can table this issue for now and see how things go. Let's clone our `tasks` git repo and see if we can build it with this Maven container.
+OK, so this container uses Java 14, and our tasks app uses Java 8. This might be a problem, but we can table this issue for now and see how things go. Let's clone our `tasks` git repo and see if we can build it with this Maven container.
 
 ```bash
-$ git clone -b dso4 https://gitea-server-devsecops.apps.cluster-nisky-5dc3.nisky-5dc3.example.opentlc.com/user1/openshift-tasks.git openshift-tasks-dso4
+$ git clone -b dso4 https://gitea-server-devsecops.%cluster_subdomain%/%username%/openshift-tasks.git openshift-tasks-dso4
 Cloning into 'openshift-tasks-dso4'...
 remote: Enumerating objects: 767, done.
 remote: Counting objects: 100% (767/767), done.
@@ -225,9 +226,9 @@ Receiving objects: 100% (767/767), 1.93 MiB | 4.35 MiB/s, done.
 Resolving deltas: 100% (286/286), done
 ```
 
-So, now I've cloned the git repo into my local workstation into the openshift-tasks-dso4 directory. Now I can try to re-run the Maven container and mount that directory:
+So, now we've cloned the git repo into the local workstation into the openshift-tasks-dso4 directory. Now we can try to re-run the Maven container and mount that directory:
 
-* I'm mounting it into the /workspace/source directory because that's where normally tekton would mount a PipelineResource named `source` . When I'm experimenting with this image to build my sources, I want to make it as similar as I can to how Tekton will run it, so that it's super easy for me to make it work in Tekton afterwards
+* We're mounting it into the /workspace/source directory because that's where normally Tekton would mount a PipelineResource named `source` . When we're experimenting with this image to build the sources, we want to make it as similar as we can to how Tekton will run it, so that it's super easy to make it work in Tekton afterwards
 * I'm also adding the :Z option on the mount to appease SELinux
 
 ```bash
@@ -237,7 +238,7 @@ app-template.yaml  configuration  pipeline-bc.yaml  pom.xml  README.md  src
 bash-4.2# mvn clean package -f /workspace/source/pom.xml
 ```
 
-Woo-hoo!!! I verified that my app source code is in the /workspace/source directory, and I can run the build. The build runs for a while and.... Womp, womp ! It fails with a Java compile error !!!
+Woo-hoo!!! We verified that the app source code is in the /workspace/source directory, and we can run the build. The build runs for a while and.... Womp, womp ! It fails with a Java compile error !!!
 
 ```shell
 [ERROR] /workspace/source/src/main/java/org/jboss/as/quickstarts/tasksrs/model/Task.java:[137,16] cannot find symbol
@@ -282,7 +283,7 @@ W00t, w00t !! The build runs for a little while and successfully completes - now
 The big takeaways from the work so far:
 
 * Since Tekton runs all of the tasks in pods, we can very easily experiment with the same containers locally until we see something work
-* With a little bit of knowledge about how tekton works, we can mount the directories in our local containers to make it as similar as possible for when we move our work into Tekton proper
+* With a little bit of knowledge about how Tekton works, we can mount the directories in our local containers to make it as similar as possible for when we move our work into Tekton proper
 
 # Create standalone TaskRun
 
@@ -385,12 +386,13 @@ spec:
     name: simple-maven
 ```
 
-We can also see the TaskRun succeed:
+We can also see the TaskRun succeed (be sure to replace the `simple-maven-<taskID#>` with the value that returns from the first command):
 
 ```bash
 $ tkn tr ls | grep simple-maven
 simple-maven-nb5nj                                           2 minutes ago    2 minutes    Succeeded
-$ tkn tr logs -f simple-maven-nb5nj
+
+$ tkn tr logs -f simple-maven-<taskID#>
 #... snipped for brevity ...
 [mvn-goals] Downloading: https://repo.maven.apache.org/maven2/com/thoughtworks/xstream/xstream/1.3.1/xstream-1.3.1.jar
 Downloaded: https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-io/1.0.1/plexus-io-1.0.1.jar (51 kB at 2.1 MB/s)
@@ -442,7 +444,7 @@ spec:
         name: simple-maven
 ```
 
-Now, starting this pipeline is pretty straightforward, even using the GUI - the Console will prompt you to specify which PipelineResource to invoke the pipeline with:
+Now, starting this pipeline is pretty straightforward, even using the GUI - the Console will launch a prompt to specify which PipelineResource needed to invoke the pipeline with:
 
 ![Start Pipeline GUI](images/start-simple-pipeline.png)
 
@@ -453,11 +455,11 @@ We can now observe the execution of the Pipeline Run in the Console and follow t
 
 In this lab we learned how to explore what Tekton provides, and we have some easy building blocks that we can use going forward, regardless of what steps we need to build the pipeline with. In summary, the steps are as follows:
 
-1. Find a container that has the tool that you need - be it maven, s2i, or just plain bash.
-1. Launch the container with the tool locally to figure out the details on how to interact with the tool. Here, you might need to play with some podman/docker options with mounting directories, etc. The more you can replicate some of the conventions of the Tekton environment (e.g. where resources are mounted, where workspaces end up, etc), the easier it will be to later transition to Tekton.
-1. Once you have the arguments that you need to invoke the container with, you can now experiment with a TaskRun with an inline Task - this way you can see Tekton execute your tool and you can adjust the tool parameters and perform the relevant parameter substitutions, paths, etc.
-1. Once you have a working Task, move it to a standalone Task. Confirm that the standalone Task works with a TaskRun (with all the right parameters)
-1. Once you have a working standalone Task, integrate it into a Pipeline
-1. Run your Pipeline
+1. Find a container that has the tool that we need - be it maven, s2i, or just plain bash.
+1. Launch the container with the tool locally to figure out the details on how to interact with the tool. Here, we might need to play with some podman/docker options with mounting directories, etc. The more you can replicate some of the conventions of the Tekton environment (e.g. where resources are mounted, where workspaces end up, etc), the easier it will be to later transition to Tekton.
+1. Once we have the arguments that we need to invoke the container with, we can now experiment with a TaskRun with an inline Task - this way we can see Tekton execute the tool and we can adjust the tool parameters and perform the relevant parameter substitutions, paths, etc.
+1. Once we have a working Task, move it to a standalone Task. Confirm that the standalone Task works with a TaskRun (with all the right parameters)
+1. Once we have a working standalone Task, integrate it into a Pipeline
+1. Run the Pipeline
 
 The next lab will explore further how to make a Task a reusable component.

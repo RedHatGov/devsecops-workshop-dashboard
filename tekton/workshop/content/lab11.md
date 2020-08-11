@@ -1,24 +1,24 @@
 # Introduction
 
-In this lab we will add the "Image Builder" and "Build Container Image"  stages in your pipeline
+In this lab we will add the "Image Builder" and "Build Container Image"  stages in our pipeline
 
 ![Image Builder Stage](images/openshift-pipeline-imagebuilder.png)
 
 # OpenShift, Containers, and Container Images
 
-Containers are an important foundation for your application in building a Trusted Software Supply Chain.  You want a secure and blessed golden container image that your application will inherit security controls from.
+Containers are an important foundation for applications in building a Trusted Software Supply Chain.  We want a secure and blessed golden container image that our application will inherit security controls from.
 
 Containers are built using a layered approach. For example, to create a container of a Java web application, you could do so in multiple layers: the OS, the JVM, the web server, and the code itself.
 
 ![Container Golden Images](images/golden_images.png)
 
-We can incorporate CVE and vulnerability scanning against images in an automated fashion.  Any image change is scanned to improve the inherited security of your application.  We have partners such as Black Duck and Twistlock that do container image scanning.  Also, as a result of Red Hat's acquisition of CoreOS, we now offer Quay as an enterprise-grade registry that does vulnerability scanning.
+We can incorporate CVE and vulnerability scanning against images in an automated fashion.  Any image change is scanned to improve the inherited security of our application.  We have partners such as Black Duck and Twistlock that do container image scanning.  Also, as a result of Red Hat's acquisition of CoreOS, we now offer Quay as an enterprise-grade registry that does vulnerability scanning.
 
-We can also cryptographically sign your image so you know your container is running with a verified container image.
+We can also cryptographically sign the resulting image so we know the container is running with a verified container image.
 
 ## Start with Quality Parts
 
-Red Hat has a container registry that provides certified Red Hat and third-party container images that will be the foundation of your container images.  Our Registry also has a health index of the image so you know the state of the image.
+Red Hat has a container registry that provides certified Red Hat and third-party container images that will be the foundation of our container images.  Our registry also has a health index of the image so we know the state of the image.
 
 ![RH Container Catalog](images/rh_container_catalog.png)
 
@@ -29,7 +29,7 @@ In the last few stages, because goal could be accomplished by invoking a Maven g
 
 As we discussed before, we want to have a feedback loop that is as tight as possible so that we can experiment with and learn as quickly as possible. 
 
-There are a few different ways we can go about in creating a container image for the application. One way would be to build our own from scatch using a Dockerfile, e.g.
+There are a few different ways we can go about in creating a container image for the application. One way would be to build our own from scratch using a Dockerfile, e.g.
 * Start from a secure base image
 * Add the JVM and JBoss EAP runtime binaries
 * Add the Tasks apps binaries where the EAP runtime expects them to be
@@ -87,16 +87,13 @@ Navigate to Nexus, login with your credentials, and browse the `maven-snapshots`
 ![Maven Snapshots Tasks](images/maven_snapshots_tasks_war.png)
 
 2. For simplicity purposes, create a separate directory (e.g. `oc-build`), and copy the downloaded war file into that folder
-
-3. Create a new binary build in your OpenShift user's Dev project :
-
-4. Start the OpenShift build and wait for it to complete
-
-Here are the steps that I performed 
 ```bash
 $ mkdir ./oc-build && cp <your-downloads-folder>/jboss-tasks-rs-7.0.0*.war ./oc-build/
+```
 
-$ oc new-build --name=tekton-tasks --image-stream jboss-eap72-openshift:1.1  --binary=true -n <user#>-dev
+3. Create a new binary build in your OpenShift user's Dev project :
+```bash
+$ oc new-build --name=tekton-tasks --image-stream jboss-eap72-openshift:1.1  --binary=true -n %username%-dev
 --> Found image 0ca7413 (10 months old) in image stream "openshift/jboss-eap72-openshift" under tag "1.1" for "jboss-eap72-openshift:1.1"
 
     JBoss EAP 7.2 
@@ -113,10 +110,13 @@ $ oc new-build --name=tekton-tasks --image-stream jboss-eap72-openshift:1.1  --b
     imagestream.image.openshift.io "tekton-tasks" created
     buildconfig.build.openshift.io "tekton-tasks" created
 --> Success
+```
 
+4. Start the OpenShift build and wait for it to complete
 
-$oc start-build tekton-tasks --from-dir=./oc-build/ -n <user#>-dev --wait=true
-oc start-build tekton-tasks --from-dir=./oc-build/ -n user1-dev --wait=true
+```bash
+$oc start-build tekton-tasks --from-dir=./oc-build/ -n %username%-dev --wait=true
+oc start-build tekton-tasks --from-dir=./oc-build/ -n %username%-dev --wait=true
 Uploading directory "oc-build" as binary input for the build ...
 
 Uploading finished
@@ -124,7 +124,7 @@ build.build.openshift.io/tekton-tasks-1 started
 
 ```
 
-With these three steps, you should be able to see in the OpenShift Console:
+With these three steps, we can see the following in the OpenShift Console:
 * A new `tekton-tasks` Build Config 
 ![Tekton Tasks Build Config](images/tekton-tasks-build-config.png)
 * A new `tekton-tasks-*` build run and complete successfully
@@ -147,7 +147,7 @@ A few things to note:
  apiVersion: tekton.dev/v1beta1
   kind: Task
   metadata:
-    name: create-jboss-app-image
+    name: create-image
   spec:
     params:
       - default: tasks
@@ -204,21 +204,21 @@ A few things to note:
 
 Now, let's clean up the resources that we created manually and try running the task:
 ```bash
-$oc delete buildconfig tekton-tasks -n <user#>-dev
-$oc delete imagestream tekton-tasks -n <user#>-dev
+$oc delete buildconfig tekton-tasks -n %username%-dev
+$oc delete imagestream tekton-tasks -n %username%-dev
 ```
 
-Let's start the task and see it re-create the same resources (be sure to replace <user#> with your username):
+Let's start the task and see it re-create the same resources:
 ```bash
-tkn task start --inputresource source=tasks-source --param app_name=tekton-tasks  --param dev_project=<user#>-dev --param artifact_path 'org/jboss/quickstarts/eap/jboss-tasks-rs/7.0.0-SNAPSHOT/jboss-tasks-rs-7.0.0-SNAPSHOT.war' --workspace name=maven-repo,claimName=maven-repo-pvc create-jboss-app-image --showlog
+tkn task start --inputresource source=tasks-source --param app_name=tekton-tasks  --param dev_project=%username%-dev --param artifact_path 'org/jboss/quickstarts/eap/jboss-tasks-rs/7.0.0-SNAPSHOT/jboss-tasks-rs-7.0.0-SNAPSHOT.war' --workspace name=maven-repo,claimName=maven-repo-pvc create-jboss-app-image --showlog
 
 ```
 
-We should observe the same BuildConfig and ImageStream artifacts being created in the <user#>-dev project as when we created them manually. 
+We should observe the same BuildConfig and ImageStream artifacts being created in the %username%-dev project as when we created them manually. 
 
 ## Add the task to create container image to the pipeline
 
-With all this done, we can update the pipeline to run after the archive task  (be sure to replace the <user#> token in the yaml below)
+With all this done, we can update the pipeline to run after the archive task 
 ```yaml
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
@@ -244,12 +244,12 @@ spec:
     - name: create-image
       taskRef:
         kind: Task
-        name: create-jboss-app-image
+        name: create-image
       params:
           - name: app_name
             value: tekton-tasks
           - name: dev_project
-            value: <user#>-dev
+            value: %username%-dev
           - name: artifact_path
             value: 'org/jboss/quickstarts/eap/jboss-tasks-rs/7.0.0-SNAPSHOT/jboss-tasks-rs-7.0.0-SNAPSHOT.war'
       resources:
@@ -264,7 +264,7 @@ spec:
 
 ```
 
-With that in place, re-start the last Pipeline run from the Web Console and observe the completion of the pipeline. The expected artifacts are again found in the <user#>-dev project (BuildConfig, ImageStream, etc)
+With that in place, re-start the last Pipeline run from the Web Console and observe the completion of the pipeline. The expected artifacts are again found in the %username%-dev project (BuildConfig, ImageStream, etc)
 
 ![Create Image completed pipeline](images/pipeline_create_image_completed.png)
 
