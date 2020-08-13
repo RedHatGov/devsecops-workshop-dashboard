@@ -38,7 +38,7 @@ At this point, the first part of the pipeline only deploys the application to th
 
 When the verification is complete, the "Deploy to Stage" pipeline will perform the following steps:
 
-- Tag the container created in the "Dev" stage of the pipeline and make it available in the %username%-stage project
+- Tag the container created in the "Dev" stage of the pipeline and make it available in the `%username%-stage` project
 - Clean up the artifacts from the previous version of the application
 - Deploy a new version of the application based on the newly tagged image into the %username%-stage project
 

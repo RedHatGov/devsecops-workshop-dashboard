@@ -4,9 +4,9 @@ Before we dive into starting to build our pipeline, let's review some of the key
 
 ## Tasks and Steps, and Task Runs
 
-So, here are the definitions:
+Here are the definitions of the main Tekton constructs:
 
-* Step: Run commands in a container with volumes, env vars, etc
+* Step: run commands in a container with volumes, env vars, etc
 * Task: a list of steps that run sequentially in the same pod.
 * TaskRun: an invocation of a task with inputs and outputs
 
@@ -79,7 +79,7 @@ The example pipeline above only has a single task. It defines the resources that
 
 ## Pipeline Resources
 
-The Tekton developers recognized that there are some some common elements of cloud native pipelines that are somewhat like parameters, but they are a bit more complex. Pipeline resources are inputs and outputs to tasks and pipelines. In Tasks and Pipelines pipeline resources are defined by name and type. The example Pipeline above requires the following to be given to it:
+The Tekton developers recognized that there are some some common elements of cloud native pipelines that are somewhat like parameters, but they are a bit more complex. Pipeline resources are inputs and outputs to tasks and pipelines. In Tasks and Pipelines, PipelineResource-s are defined by name and type. The example Pipeline above requires the following to be given to it:
 
 * An `app-git` pipeline resource, which is a Git repository. The same resource is then passed on to the `s2i-eap-7` task.
 * An `app-image` pipeline resource, which is an image reference. That image reference is passed to the `s2i-eap-7` task, and is the destination where the created image will be pushed.
@@ -92,7 +92,7 @@ Here's an example of a git Pipeline Resource:
 apiVersion: tekton.dev/v1alpha1
 kind: PipelineResource
 metadata:
-  name: source
+  name: tasks-source-code
 spec:
   params:
     - name: url
@@ -145,15 +145,21 @@ Workspaces provide a mechanism for sharing data between tasks. Remember that eac
 
 ## Others : Task Results, Triggers, Conditions
 
-There is a lot more to learn about other types of constucts in Tekton, but we will skip these for now.
+There is a lot more to learn about other types of constucts in Tekton, but we will skip them for now while we start using the basic constructs that we discussed so far.
 
 # Tools
 
-As we saw so far, all parts of Tekton can be created and used through YAML. That is fantastic when we're looking to automate something, but it's a bit less than ideal for day-to-day usage.
+As we saw so far, all parts of Tekton can be created and used through YAML. That is fantastic when we're looking to automate something, but it's a bit less than ideal for day-to-day usage. For most of our work we will be using a combination of YAML and the OpenShift console.
 
-For most of our work we will be using a combination of YAML and the OpenShift console, but either option is available for most steps, and YAML can be supplied directly via the CLI, from an automation tool that knows how to work with the Kubernetes API like Ansible, or from another Kubernetes-native tool like ArgoCD.
+## Working with YAML
 
-## OpenShift Console
+ When creating a resource with YAML, the YAML can be supplied directly in the Web Console, via the CLI, from an automation tool that knows how to work with the Kubernetes API like Ansible, or from another Kubernetes-native tool like ArgoCD.
+
+
+ In order to create a resource in the Console UI, while you're in the project where the resource needs to be created, click the `+` button in the upper right corner, and paste the YAML for the resource.  
+ ![Console Paste YAML](images/console_paste_yaml.png)
+
+## OpenShift Console Web UI
 
 The OpenShift Console provides support for creating Pipelines directly in the OpenShift UI.
 

@@ -9,7 +9,7 @@ OpenShift Pipelines is supported in OpenShift using an operator. When the operat
 
 Ensure that the `devsecops` project is selected in the "Project" drop-down and change from the "Administrator" view to the "Developer" view. These views are based on persona, and you can provide both or either to specific accounts, with varying levels of control.
 
-Identify the `gitea-server` deployment in the Topology view and click in the center of the icon. On the right-hand side pane, click the Route link (something like `https://gitea-server-devsecops.[...]`) to open it in a new tab. To log into the gitea server, click the `Sign-In` button and use the same user name and password provided at the Dashboard login.
+Identify the `gitea-server` deployment in the Topology view and click in the center of the icon. On the right-hand side pane, click the [gitea-server Route]  (https://gitea-server-devsecops.%cluster_subdomain%/%username%)) to open it in a new tab. To log into the gitea server, click the `Sign-In` button and use `%username%`  and password provided at the Dashboard login.
 
 ![Gitea Route](images/gitea_route_developer.png)
 
@@ -95,6 +95,6 @@ oc get ClusterTask openshift-client -o yaml
 
 ```
 
-You have all the ability to take any container into a task into your pipeline, make it reusable with parameters, and plug it into your pipelines. If one of the ClusterTasks doesn't quite quite work the way you like, you can just copy it into a task in your own project and change it to your liking.
+You have the ability to take any container into a task into your pipeline, make it reusable with parameters, and plug it into your pipelines. If one of the ClusterTasks doesn't quite quite work the way you like, you can just copy it into a task in your own project and change it to your liking.
 
 [1]: https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html

@@ -26,14 +26,16 @@ With the information above, we can again add an extra step to the pipeline and r
 * Since we want the Code Analysis to run in parallel with the Unit Tests, we can ask Tekton to run this `code-analysis` task *after* the build, and that will make the `test-app` and `code-analysis` run in parallel. It's *that* easy !!! 
 * We will use the OpenShift service name for SonarQube so that the build can access the running SonarQube instance (in the devsecops project)
 
+Update the pipeline with the content of the `code-analysis` step below. 
+
 ```yaml
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: tasks-pipeline
+  name: tasks-dev-pipeline
 spec:
   resources:
-    - name: tasks-source-code
+    - name: pipeline-source
       type: git
 
   workspaces:
@@ -62,7 +64,7 @@ spec:
       resources:
         inputs:
           - name: source
-            resource: tasks-source-code
+            resource: pipeline-source
       workspaces:
         - name: maven-repo
           workspace: local-maven-repo
@@ -71,8 +73,8 @@ spec:
 ```
 # Test Your Pipeline
 
-```bash
-tkn pipeline start --resource tasks-source-code=tasks-source --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-pipeline --showlog
+```execute
+tkn pipeline start --resource pipeline-source=tasks-source-code --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-dev-pipeline --showlog
 
 ```
 
@@ -80,17 +82,18 @@ tkn pipeline start --resource tasks-source-code=tasks-source --workspace name=lo
 
 # SonarQube Dashboard
 
-Once we build the full pipeline and run it, we will log into SonarQube and view the various metrics, stats, and code coverage as seen from the screenshot below.
+Once we build the full pipeline and run it, we will log into [SonarQube](https://sonarqube-devsecops.%cluster_subdomain%) and view the various metrics, stats, and code coverage as seen from the screenshot below.
 
-To get the URL of the SonarQube dashboard, run the command:
-```bash
+To get the URL of the SonarQube dashboard, we can also run the command:
+```execute
 oc get route sonarqube -n devsecops
+```
+
+```bash
 NAME        HOST/PORT                                                                    PATH   SERVICES    PORT    TERMINATION     WILDCARD
 sonarqube   sonarqube-devsecops.%cluster_subdomain%          sonarqube   <all>   edge/Redirect   None
 
 ```
-
-Paste the URL in your browser and log in with your workshop credentials. 
 
 ![SonarQube dashboard](images/sonqarqube-tasks-dashboard.png)
 

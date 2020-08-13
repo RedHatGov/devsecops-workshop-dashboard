@@ -13,10 +13,10 @@ However, if we want to create a simple webhook, at the simplest level we need th
 
 # Dev Pipeline Webhook
 
-The goal of setting this up is to trigger a new pipeline run of our `tekton-tasks` pipeline every time someone commits to our Gitea repository. While this can be made quite much more customizable and extensible, we will start with the simplest thing possible. 
+The goal of setting this up is to trigger a new pipeline run of our `tasks-dev-pipeline` pipeline every time someone commits to our Gitea repository. While this can be made quite much more customizable and extensible, we will start with the simplest thing possible. 
 
 ## Configure Tekton triggers objects
-First, create a TriggerTemplate. If we inspect the prior runs of the `tasks-pipeline`, the PipelineRuns that we created were pretty simple. They didn't use any parameters, so that makes the PipelineRun template below as simple as it can be. Switch to the `%username%-cicd` project and add the YAML below. 
+First, create a TriggerTemplate. If we inspect the prior runs of the `tasks-dev-pipeline`, the PipelineRuns that we created were pretty simple. They didn't use any parameters, so that makes the PipelineRun template below as simple as it can be. Switch to the `%username%-cicd` project and add the YAML below. 
 
 
 ```yaml
@@ -32,11 +32,11 @@ spec:
       generateName: dev-tekton-tasks-triggered-
     spec:
       pipelineRef:
-        name: tasks-pipeline
+        name: tasks-dev-pipeline
       resources:
-      - name: tasks-source-code
+      - name: pipeline-source
         resourceRef:
-          name: tasks-source
+          name: tasks-source-code
       serviceAccountName: pipeline
       workspaces:
       - name: local-maven-repo
@@ -75,32 +75,29 @@ spec:
         name: dev-tekton-tasks-trigger-template
 ```
 In order to make this service available externally to the cluster, we will expose the service : 
-```bash
-$ oc expose svc el-dev-tekton-event-listener -n %username%-cicd
+```execute
+oc expose svc el-dev-tekton-event-listener -n %username%-cicd
 ```
 
 ## Add a Webhook definition in Gitea
 
 The last step is to configure Gitea to invoke this webhook
 
-* In the `devsecops` project, find the route of the `gitea-server`, e.g. 
-```bash
-$ oc get route gitea-server -n devsecops
-NAME           HOST/PORT                                                                       PATH   SERVICES       PORT    TERMINATION     WILDCARD
-gitea-server   gitea-server-devsecops.%cluster_subdomain%          gitea-server   <all>   edge/Redirect   None
+* In the `devsecops` project, navigate to the  [Gitea Server](https://gitea-server-devsecops.%cluster_subdomain%)
 
-```
-
-* Navigate to `Gitea` and log in using your `%username%` username. Click on your `openshift-tasks` repository, navigate to the `Settings` page, and on that page click on the `Webhooks` tab. 
+* Log in using your `%username%` username. Click on your `openshift-tasks` repository, navigate to the `Settings` page, and on that page click on the `Webhooks` tab. 
 ![Gitea Webhook Settings](images/gitea_settings_webhook.png)
 
 Use `oc` to extract the URL of the new route that we created for the Tekton EventListener:
+```execute
+oc get route el-dev-tekton-event-listener 
+```
+The output of the command is similar to the content below: 
 ```bash
-$ oc get route el-dev-tekton-event-listener 
 NAME                           HOST/PORT                                                                                        PATH   SERVICES                       PORT            TERMINATION   WILDCARD
 el-dev-tekton-event-listener   el-dev-tekton-event-listener-%username%-cicd.%cluster_subdomain%          el-dev-tekton-event-listener   http-listener                 None
 ```
-* Click on the `Add Webhook` button and choose `Gitea` as the webhook type. On the resulting page, fill in the `el-dev-tekton-event-listener` route URL in the `Target URL` field and `secret1234` in the `Secret` field - everything else can stay as default. Click the `Add Webhook` button to save.  
+* Click on the `Add Webhook` button and choose `Gitea` as the webhook type. On the resulting page, fill in the `el-dev-tekton-event-listener` route URL `http://el-dev-tekton-event-listener-%username%-cicd.%cluster_subdomain%` in the `Target URL` field and `secret1234` in the `Secret` field - everything else can stay as default. Click the `Add Webhook` button to save.  
 
 ![Gitea webhook definition](images/gitea_add_webhook_details.png)
 
@@ -122,7 +119,7 @@ The process to creating the webhook to trigger the Stage pipeline is very simila
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerTemplate
 metadata:
-  name: stage-tekton-tasks-trigger-template
+  name: tasks-stage-pipeline-trigger-template
 spec:
   params:
   - name: app_ver
@@ -131,10 +128,10 @@ spec:
   - apiVersion: tekton.dev/v1beta1
     kind: PipelineRun
     metadata:
-      generateName: stage-tekton-tasks-triggered-
+      generateName: tasks-stage-pipeline-triggered-
     spec:
       pipelineRef:
-        name: stage-tekton-tasks
+        name: tasks-stage-pipeline
       serviceAccountName: pipeline
       params:
       - name: app_version
@@ -146,7 +143,7 @@ spec:
 apiVersion: triggers.tekton.dev/v1alpha1
 kind: TriggerBinding
 metadata:
-  name: stage-tekton-tasks-trigger-binding
+  name: tasks-stage-pipeline-trigger-binding
 spec: 
   params: 
   - name: app_ver
@@ -164,34 +161,34 @@ spec:
   triggers:
     - name: curl-event
       bindings:
-        - name: stage-tekton-tasks-trigger-binding
+        - name: tasks-stage-pipeline-trigger-binding
       interceptors:
         - cel:
             filter: body.secret == "secret1234"
       template:
-        name: stage-tekton-tasks-trigger-template
+        name: tasks-stage-pipeline-trigger-template
 ```
 
 * Test the newly created Webhook
   
 After creating these objects, create the `Route` for the `el-stage-tekton-event-listener` service. 
-```bash
-$ oc expose service el-stage-tekton-event-listener
+```execute
+oc expose service el-stage-tekton-event-listener
 ```
 
 Get the URL for the newly exposed Route
-```bash
-$ oc get route el-stage-tekton-event-listener 
+```execute
+oc get route el-stage-tekton-event-listener 
 ```
 
 In order to simulate that a new app version was created, we will simply tag the `tekton-tasks` image stream with a new value that we will then use as our `app_ver` parameter, as the Dev pipeline would do exactly the same using the gitsha of the latest commit:
-```bash
-$ oc tag tekton-tasks:latest tekton-tasks:foobar1 -n %username%-dev
+```execute
+oc tag tekton-tasks:latest tekton-tasks:foobar1 -n %username%-dev
 ```
 
-Now, trigger the webhook passing `foobar1` as the `app_ver` parameter and observe that the `stage-tekton-tasks` pipeline is running. Note that if we don't include the `secret` value in the body or include a different value, the webhook will not trigger the pipeline. 
-```bash
-$curl -X POST -d '{"app_ver":"foobar1", "secret":"secret1234"}' http://el-stage-tekton-event-listener-%username%-cicd.%cluster_subdomain%/
+Now, trigger the webhook passing `foobar1` as the `app_ver` parameter and observe that the `tasks-stage-pipeline` pipeline is running. Note that if we don't include the `secret` value in the body or include a different value, the webhook will not trigger the pipeline. 
+```execute
+curl -X POST -d '{"app_ver":"foobar1", "secret":"secret1234"}' http://el-stage-tekton-event-listener-%username%-cicd.%cluster_subdomain%/
 ```
 ![Stage pipeline webhook](images/webhook_stage_pipeline.png)
 

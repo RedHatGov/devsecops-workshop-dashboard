@@ -51,8 +51,12 @@ Looking at the Task Catalog, we can see that there is an existing `openshift-cli
 ![OpenShift Client ClusterTask](images/cluster_tasks_openshift_client.png)
 
 Let's investigate that ClusterTask, it might just do the job.
-```bash
+```execute
 tkn  clustertask describe openshift-client
+```
+
+The details of the ClusterTask looks something similar to the output below:
+```
 Name:   openshift-client
 
 📨 Input Resources
@@ -82,18 +86,29 @@ This ClusterTask comes in very handy if we need to implement a stage that just n
 ## Experiment and validate 
 Let's go through those steps to work through the mechanics of how this works:
 1. Download the Tasks WAR file from Nexus:
-Navigate to Nexus, login with your credentials, and browse the `maven-snapshots` repository, navigate into the org/jboss/quickstarts/jboss-tasks-rs/7.0.0-SNAPSHOT artifact and click the "Path" link (from the right panel) to download the WAR file. 
+Navigate to Nexus, login with your credentials, and browse the `maven-snapshots` repository, navigate into the org/jboss/quickstarts/jboss-tasks-rs/7.0.0-SNAPSHOT artifact and copy the link URL from the  "Path" link (from the right panel) 
 
 ![Maven Snapshots Tasks](images/maven_snapshots_tasks_war.png)
 
 2. For simplicity purposes, create a separate directory (e.g. `oc-build`), and copy the downloaded war file into that folder
+
+
+
+```execute
+mkdir ./oc-build
+```
+Now, download the war file into the oc-build directory (be sure to replace ). The link would look something like this : `http://nexus-devsecops.%cluster_subdomain%/repository/maven-snapshots/org/jboss/quickstarts/eap/jboss-tasks-rs/7.0.0-SNAPSHOT/jboss-tasks-rs-7.0.0-20200810.140415-1.war' . Run the command below, replacing the <jboss-tasks-war-url#> token with the URL you copied.
+
 ```bash
-$ mkdir ./oc-build && cp <your-downloads-folder>/jboss-tasks-rs-7.0.0*.war ./oc-build/
+wget  -O oc-build/jboss-tasks-rs-7.0.0-SNAPSHOT.war <jboss-tasks-war-url#>
 ```
 
-3. Create a new binary build in your OpenShift user's Dev project :
+1. Create a new binary build in your OpenShift user's Dev project :
+```execute
+oc new-build --name=tekton-tasks --image-stream jboss-eap72-openshift:1.1  --binary=true -n %username%-dev
+```
+The output of the new build looks similar to the content below: 
 ```bash
-$ oc new-build --name=tekton-tasks --image-stream jboss-eap72-openshift:1.1  --binary=true -n %username%-dev
 --> Found image 0ca7413 (10 months old) in image stream "openshift/jboss-eap72-openshift" under tag "1.1" for "jboss-eap72-openshift:1.1"
 
     JBoss EAP 7.2 
@@ -104,7 +119,7 @@ $ oc new-build --name=tekton-tasks --image-stream jboss-eap72-openshift:1.1  --b
 
     * A source build using binary input will be created
       * The resulting image will be pushed to image stream tag "tekton-tasks:latest"
-      * A binary build was created, use 'oc start-build --from-dir' to trigger a new build
+      * A binary build was created, use "oc start-build --from-dir" to trigger a new build
 
 --> Creating resources with label build=tekton-tasks ...
     imagestream.image.openshift.io "tekton-tasks" created
@@ -114,14 +129,8 @@ $ oc new-build --name=tekton-tasks --image-stream jboss-eap72-openshift:1.1  --b
 
 4. Start the OpenShift build and wait for it to complete
 
-```bash
-$oc start-build tekton-tasks --from-dir=./oc-build/ -n %username%-dev --wait=true
+```execute
 oc start-build tekton-tasks --from-dir=./oc-build/ -n %username%-dev --wait=true
-Uploading directory "oc-build" as binary input for the build ...
-
-Uploading finished
-build.build.openshift.io/tekton-tasks-1 started
-
 ```
 
 With these three steps, we can see the following in the OpenShift Console:
@@ -144,74 +153,73 @@ A few things to note:
 * Using our own Task for this stage will also allow us to extend the task as we need to if there are future changes that are required without changing the actual pipeline
   
 ```yaml
- apiVersion: tekton.dev/v1beta1
-  kind: Task
-  metadata:
-    name: create-image
-  spec:
-    params:
-      - default: tasks
-        description: The name of the app
-        name: app_name
-        type: string
-      - description: The name dev project
-        name: dev_project
-        type: string
-      - description: binary artifact path in the local artifact repo
-        # something like org/jboss/quickstarts/eap/jboss-tasks-rs/7.0.0-SNAPSHOT/jboss-tasks-rs-7.0.0-SNAPSHOT.war
-        type: string
-        name: artifact_path
-    resources:
-      inputs:
-        - name: source
-          type: git
-    steps:
-      - name: create-build-config
-        image: 'quay.io/openshift/origin-cli:latest'
-        script: >
-          #!/bin/sh
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: create-image
+spec:
+  params:
+    - default: tasks
+      description: The name of the app
+      name: app_name
+      type: string
+    - description: The name dev project
+      name: dev_project
+      type: string
+    - description: binary artifact path in the local artifact repo
+      # something like org/jboss/quickstarts/eap/jboss-tasks-rs/7.0.0-SNAPSHOT/jboss-tasks-rs-7.0.0-SNAPSHOT.war
+      type: string
+      name: artifact_path
+  resources:
+    inputs:
+      - name: source
+        type: git
+  steps:
+    - name: create-build-config
+      image: 'quay.io/openshift/origin-cli:latest'
+      script: >
+        #!/bin/sh
 
-          set -e -o pipefail
+        set -e -o pipefail
 
-          echo "Creating new build config"  
+        echo "Creating new build config"  
 
-          # This allows the new build to be created whether it exists or not
+        # This allows the new build to be created whether it exists or not
 
-          oc new-build -o yaml --name=$(params.app_name) --image-stream=jboss-eap72-openshift:1.1  --binary=true -n
-          $(params.dev_project) | oc apply -n $(params.dev_project) -f - 
-      - name: build-app-image
-        image: 'quay.io/openshift/origin-cli:latest'    
-        script: >
-          #!/bin/sh
+        oc new-build -o yaml --name=$(params.app_name) --image-stream=jboss-eap72-openshift:1.1  --binary=true -n
+        $(params.dev_project) | oc apply -n $(params.dev_project) -f - 
+    - name: build-app-image
+      image: 'quay.io/openshift/origin-cli:latest'    
+      script: >
+        #!/bin/sh
 
-          set -e -o pipefail
+        set -e -o pipefail
 
-          echo "Start the openshift build"  
-
-
-          rm -rf $(inputs.resources.source.path)/oc-build && mkdir -p $(inputs.resources.source.path)/oc-build/deployments 
+        echo "Start the openshift build"  
 
 
-          cp $(workspaces.maven-repo.path)/$(params.artifact_path) $(inputs.resources.source.path)/oc-build/deployments/ROOT.war 
+        rm -rf $(inputs.resources.source.path)/oc-build && mkdir -p $(inputs.resources.source.path)/oc-build/deployments 
 
 
-          oc start-build $(params.app_name) --from-dir=$(inputs.resources.source.path)/oc-build -n   $(params.dev_project) --wait=true 
+        cp $(workspaces.maven-repo.path)/$(params.artifact_path) $(inputs.resources.source.path)/oc-build/deployments/ROOT.war 
 
 
-    workspaces:
-      - name: maven-repo
+        oc start-build $(params.app_name) --from-dir=$(inputs.resources.source.path)/oc-build -n   $(params.dev_project) --wait=true 
+
+
+  workspaces:
+    - name: maven-repo
 ```
 
 Now, let's clean up the resources that we created manually and try running the task:
-```bash
-$oc delete buildconfig tekton-tasks -n %username%-dev
-$oc delete imagestream tekton-tasks -n %username%-dev
+```execute
+oc delete buildconfig tekton-tasks -n %username%-dev
+oc delete imagestream tekton-tasks -n %username%-dev
 ```
 
 Let's start the task and see it re-create the same resources:
-```bash
-tkn task start --inputresource source=tasks-source --param app_name=tekton-tasks  --param dev_project=%username%-dev --param artifact_path 'org/jboss/quickstarts/eap/jboss-tasks-rs/7.0.0-SNAPSHOT/jboss-tasks-rs-7.0.0-SNAPSHOT.war' --workspace name=maven-repo,claimName=maven-repo-pvc create-jboss-app-image --showlog
-
+```execute
+tkn task start --inputresource source=tasks-source-code --param app_name=tekton-tasks  --param dev_project=%username%-dev --param artifact_path='org/jboss/quickstarts/eap/jboss-tasks-rs/7.0.0-SNAPSHOT/jboss-tasks-rs-7.0.0-SNAPSHOT.war' --workspace name=maven-repo,claimName=maven-repo-pvc create-image --showlog
 ```
 
 We should observe the same BuildConfig and ImageStream artifacts being created in the %username%-dev project as when we created them manually. 
@@ -223,10 +231,10 @@ With all this done, we can update the pipeline to run after the archive task
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: tasks-pipeline
+  name: tasks-dev-pipeline
 spec:
   resources:
-    - name: tasks-source-code
+    - name: pipeline-source
       type: git
 
   workspaces:
@@ -255,7 +263,7 @@ spec:
       resources:
         inputs:
           - name: source
-            resource: tasks-source-code
+            resource: pipeline-source
       workspaces:
         - name: maven-repo
           workspace: local-maven-repo
@@ -265,6 +273,9 @@ spec:
 ```
 
 With that in place, re-start the last Pipeline run from the Web Console and observe the completion of the pipeline. The expected artifacts are again found in the %username%-dev project (BuildConfig, ImageStream, etc)
+```execute
+tkn pipeline start --resource pipeline-source=tasks-source-code --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-dev-pipeline --showlog
+```
 
 ![Create Image completed pipeline](images/pipeline_create_image_completed.png)
 
