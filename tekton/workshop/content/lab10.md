@@ -18,10 +18,10 @@ The "-P nexus3" option activates the nexus3 profile defined in the configuration
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: tasks-pipeline
+  name: tasks-dev-pipeline
 spec:
   resources:
-    - name: tasks-source-code
+    - name: pipeline-source
       type: git
 
   workspaces:
@@ -51,7 +51,7 @@ spec:
       resources:
         inputs:
           - name: source
-            resource: tasks-source-code
+            resource: pipeline-source
       workspaces:
         - name: maven-repo
           workspace: local-maven-repo
@@ -65,21 +65,15 @@ One thing to call out here is that the `runAfter` attribute of the task allows u
 # Test Your Pipeline
 
 Either run the pipeline from the command line, or re-run the previous PipelineRun from the Console:
-```bash
-tkn pipeline start --resource tasks-source-code=tasks-source --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-pipeline --showlog
+```execute
+tkn pipeline start --resource pipeline-source=tasks-source-code --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-dev-pipeline --showlog
 ```
 
 ![Archive Pipeline Run Results](images/archive_pipeline_results.png)
 
-Now we can view the contents of the Nexus repository. First, let's get the URL of the Nexus server:
-```bash
-oc get route -n devsecops nexus
-NAME    HOST/PORT                                                                PATH   SERVICES   PORT   TERMINATION   WILDCARD
-nexus   nexus-devsecops.apps.cluster-nisky-0450.nisky-0450.example.opentlc.com          nexus      8081                 None
+Now we can view the contents of the [Nexus repository](http://nexus-devsecops.%cluster_subdomain%). 
 
-```
-
-With the Nexus route URL in hand, navigate to Nexus, click the Sign-In button in the upper-right corner, log in with your credentials (you will be asked tochange your password through the wizard - just keep the same credentials as before). Then, Navigate to Browse from the left-hand navigation menu, and click into the `maven-snapshots` repository. You will see the SNAPSHOT artifacts that have been created so far: 
+Click the `Sign-In` button in the upper-right corner, and log in with the assigned credentials (you will be asked to change your password through the wizard - just keep the same credentials as before). Then, we can navigate to `Browse` from the left-hand navigation menu, and click into the `maven-snapshots` repository. Below is the SNAPSHOT artifacts that have been created so far: 
 
 ![Nexus artifacts](images/nexus_artifacts_tasks.png)
 

@@ -16,7 +16,7 @@ The easiest way to deploy an application is using the Developer Console in OpenS
 * Switch to the Developer console (from the upper-left corner navigation) and click the "+Add" button and choose the "Container Image" tile
 ![Developer Console Add](images/developer_console_add.png)
 
-* Choose the "Image Stream tag from internal registry" and choose the "<user#>-dev" project in the Projects dropdown, then choose the `tekton-tasks` in the ImageStreams (which is pre-populated because we created that image stream in the previous stage) and the `latest` tag from the Tag dropdown. Leave the default and hit the `Create` button
+* Choose the "Image Stream tag from internal registry" and choose the "%username%-dev" project in the Projects dropdown, then choose the `tekton-tasks` in the ImageStreams (which is pre-populated because we created that image stream in the previous stage) and the `latest` tag from the Tag dropdown. Leave the default and hit the `Create` button
 ![Developer Console Deploy Image](images/developer_console_image_from_intreg.png)
 
 The UI redirects to the `Topology` screen where we can see the application start very quickly. 
@@ -35,20 +35,21 @@ First off, we will need to do some cleanup of our manual work. Although this fee
 * A Service named `tekton-tasks`
 * A Route named `tekton-tasks`
 
-In order to clean that up, we can use the command line (remember to replace the <user#> token with your username)
-```
-oc delete deployment tekton-tasks -n <user#>-dev
-oc delete service tekton-tasks -n <user#>-dev
-oc delete route tekton-tasks -n <user#>-dev
+In order to clean that up, we can use the command line: 
+
+```execute
+oc delete deployment tekton-tasks -n %username%-dev
+oc delete service tekton-tasks -n %username%-dev
+oc delete route tekton-tasks -n %username%-dev
 ```
 
-Then, if we wanted to deploy a new instance of the application based on the image we wanted, we can run (remember to replace the <user#> token with your username):
-'''bash
-oc new-app --image-stream=tekton-tasks:latest -n  <user#>-dev
-oc expose svc tekton-tasks -n <user#>-dev
-'''
+Then, if we wanted to deploy a new instance of the application based on the image we wanted, we can run :
+```execute
+oc new-app --image-stream=tekton-tasks:latest -n  %username%-dev
+oc expose svc tekton-tasks -n %username%-dev
+```
 
-Re-running the commands below re-deploys the application and it's back to running
+Re-running the commands above re-deploys the application and it's back to running
 
 ## Create deploy-image Task
 
@@ -57,66 +58,66 @@ Now that we have the actions that need to occur, we can proceed to create a new 
 * The step also sets the rollout of the deployment to manual so that it doesn't automatically re-deploy when a new image is pushed. 
 
 ```yaml
-  apiVersion: tekton.dev/v1beta1
-  kind: Task
-  metadata:
-    name: deploy-to-dev
-  spec:
-    params:
-      - description: The name of the app
-        name: app_name
-        type: string
-      - description: The name of the dev project
-        name: dev_project
-        type: string
-    resources:
-      inputs:
-        - name: source
-          type: git
-    steps:
-      - name: deploy-app-from-image
-        image: 'quay.io/openshift/origin-cli:latest'            
-        script: >
-          #!/bin/sh
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: deploy-to-dev
+spec:
+  params:
+    - description: The name of the app
+      name: app_name
+      type: string
+    - description: The name of the dev project
+      name: dev_project
+      type: string
+  resources:
+    inputs:
+      - name: source
+        type: git
+  steps:
+    - name: deploy-app-from-image
+      image: 'quay.io/openshift/origin-cli:latest'            
+      script: >
+        #!/bin/sh
 
-          set -e -o pipefail
+        set -e -o pipefail
 
-          echo "Create new app from image stream in $(params.dev_project) project"   
+        echo "Create new app from image stream in $(params.dev_project) project"   
 
-          oc new-app --image-stream=$(params.app_name):latest -n
-          $(params.dev_project) --as-deployment-config=true -o yaml | oc apply -n $(params.dev_project)  -f - 
+        oc new-app --image-stream=$(params.app_name):latest -n
+        $(params.dev_project) --as-deployment-config=true -o yaml | oc apply -n $(params.dev_project)  -f - 
 
-          echo "Setting manual triggers on deployment $(params.app_name)"
+        echo "Setting manual triggers on deployment $(params.app_name)"
 
-          oc set triggers dc/$(params.app_name) --manual=true -n  $(params.dev_project) 
+        oc set triggers dc/$(params.app_name) --manual=true -n  $(params.dev_project) 
 
-          if ! oc get route/$(params.app_name) -n $(params.dev_project) ; then
+        if ! oc get route/$(params.app_name) -n $(params.dev_project) ; then
 
-            oc expose svc $(params.app_name) -n $(params.dev_project) || echo "Failed to create route for $(params.app_name)"
+          oc expose svc $(params.app_name) -n $(params.dev_project) || echo "Failed to create route for $(params.app_name)"
 
-          fi
-            
-          oc rollout latest dc/$(params.app_name) -n  $(params.dev_project)
+        fi
+          
+        oc rollout latest dc/$(params.app_name) -n  $(params.dev_project)
 ```
 
-We can test the successful execution of the task from the command line (remember to replace the <user#> token with your username):
-```bash
-tkn task start --inputresource source=tasks-source git-version --showlog 
+We can test the successful execution of the task from the command line :
+```execute
+tkn task start --inputresource source=tasks-source-code --param app_name=tekton-tasks  --param dev_project=%username%-dev --workspace name=maven-repo,claimName=maven-repo-pvc deploy-to-dev --showlog
 ```
 
 We can experiment with this Task to make sure that it succeeds under different conditions of failure
 
 ## Add task to pipeline
 
-Now that we've seen the task succeed, we can add it to our pipeline and kick off a new pipeline run (remember to replace the <user#> token with your username):
+Now that we've seen the task succeed, we can add it to our pipeline and kick off a new pipeline run:
 ```yaml
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: tasks-pipeline
+  name: tasks-dev-pipeline
 spec:
   resources:
-    - name: tasks-source-code
+    - name: pipeline-source
       type: git
 
   workspaces:
@@ -141,18 +142,23 @@ spec:
           - name: app_name
             value: tekton-tasks
           - name: dev_project
-            value: <user#>-dev
+            value: %username%-dev
       resources:
         inputs:
           - name: source
-            resource: tasks-source-code
+            resource: pipeline-source
       runAfter:
           - create-image
 
 ```
+Execute the pipeline again: 
+```execute
+tkn pipeline start --resource pipeline-source=tasks-source-code --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-dev-pipeline --showlog
+```
+
 ![Deploy to Dev Pipeline](images/deploy_to_dev_pipeline_results.png)
 
-We can observe that the application is now running in the <user#>-dev project
+We can observe that the application is now running in the %username%-dev project
 
 # Conclusion
 
