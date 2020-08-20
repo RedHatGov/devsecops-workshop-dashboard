@@ -40,15 +40,15 @@ Tasks in Tekton are expected to be reusable. A very quick re-review of our simpl
 
 # Improve simple-maven task
 
-So, now that we know how we can improve the task, let's make our first reusable and production-quality Tekton task. At each step of the way, we will make an incremental change and validate that the change did not break the task by running it with a TaskRun. Whenever we're done changing the Task, we will then update our pipeline with our latest version of the Task invocation
+Now that we know how we can improve the task, let's make our first reusable and production-quality Tekton task. At each step of the way, we will make an incremental change and validate that the change did not break the task by running it with a TaskRun. Whenever we're done changing the Task, we will then update our pipeline with our latest version of the Task invocation
 
 ## Parametrize Maven goals
 
 Since our goal is to make this task as re-usable as possible (so that we can call it with different parameters from a pipeline), we want to be able to pass in more than one goal to be executed by Maven. 
 
-When we talk about task parameters (the same applies to Pipeline parameters), Tekton is pretty simple - everythign is either a String or an array of Strings. Now, since we want to pass multiple goals to Maven, we will use an array. Additionally, since we want our Maven task to be as simple as possible to use, we will give this parameter a default value that is meaningful and simple - if you call Maven without passing a goals parameter, we would want Maven to execute the `package` goal. 
+When we talk about task parameters (the same applies to Pipeline parameters), Tekton is pretty simple - everything is either a String or an array of Strings. Now, since we want to pass multiple goals to Maven, we will use an array. Additionally, since we want our Maven task to be as simple as possible to use, we will give this parameter a default value that is meaningful and simple - if you call Maven without passing a goals parameter, we would want Maven to execute the `package` goal. 
 
-With that, this is what our task would look like:  
+With that, this is what our task would look like. Since this task already exists, navigate to the Task, hit the `YAML` tab, and replace the `spec` section of the resource with the content of the `spec` section below.   
 ```yaml
 apiVersion: tekton.dev/v1alpha1
 kind: Task
@@ -88,36 +88,31 @@ spec:
     inputs:
       - name: source
         resourceRef:
-          name: tasks-source
+          name: tasks-source-code
   taskRef:
     name: simple-maven
 ```
 
-... or on the command line ...
+... or on the command line (hit 'Enter' to accept default of 'package' as the value of the `GOALS` parameter) . Note that we are using the `--showlog` command line option in Tekton so that we can see the logs from executing the task right away and don't have to run a second command to get them...
 
-```bash
-tkn task start --inputresource source=tasks-source simple-maven
-Taskrun started: simple-maven-run-qdsr8
-
-In order to track the taskrun progress run:
-tkn taskrun logs simple-maven-run-qdsr8 -f -n user1-cicd
-
+```execute
+tkn task start --inputresource source=tasks-source-code simple-maven --showlog
 ```
 
-However, with my newfangled ability to pass in parameters, I can now start this task and pass it the goals I want to execute:
-```bash
-tkn task start --inputresource source=tasks-source --param GOALS=clean,compile simple-maven
+However, with our newfangled ability to pass in parameters, we can now start this task and pass it the goals we want to execute:
+```execute
+tkn task start --inputresource source=tasks-source-code  --showlog --param GOALS=clean,compile simple-maven
 ```
 
 ## Adding additional parameters - POM and settings. 
 
 As is always the case, it is always a balance of making a software component reusable and customizable vs making it simple to use. From a technical POV, if we wanted to add additional arguments to Maven, we could always add them to the GOALS parameter, but that just feels wrong. 
 
-First off, our current maven task assumes that the pom.xml is at the root of the source tree in the `source` PipelineResource. While that is a reasonable assumption for our specific project, different maven projects might use a different location for the project. This is the first value we want to parametrize. 
+First off, our current maven task assumes that the `pom.xml` is at the root of the source tree in the `source` PipelineResource. While that is a reasonable assumption for our specific project, different maven projects might use a different location for the project. This is the first value we want to parametrize. 
 
-If we inspect the Tasks application source repository, we will see that the source code repository has a `configuration/cicd-settings.xml` file containing some profiles, and repository settings. We want to be able to allow the passing of that path as a parameter. 
+If we inspect the Tasks application source repository, we will see that the source code repository has a `configuration/cicd-settings.xml` file containing some profiles, and repository settings. We want to be able to allow the passing of that value path as a parameter. 
 
-With these two parameters, this is what our updated task would look like:
+With these two parameters, this is what our updated task would look like. Update the `simple-maven` task with the content below:
 ```yaml
 apiVersion: tekton.dev/v1alpha1
 kind: Task
@@ -155,15 +150,14 @@ spec:
       image: gcr.io/cloud-builders/mvn:3.5.0-jdk-8
 ```
 
-With this updated task definition, we can run the new task in exactly the same way as before (e.g. if I didn't wanto to specify a different settings file than the default):
-```bash
-tkn task start --inputresource source=tasks-source --param GOALS=clean,compile simple-maven
+With this updated task definition, we can run the new task in exactly the same way as before (e.g. if we didn't want to specify a different settings file than the default):
+```execute
+tkn task start --inputresource source=tasks-source-code --param GOALS=clean,compile simple-maven --showlog
 ```
 
-Now, if we inspected the output of this run, we will see that now the Maven build takes into account the values specified in the settings file and downloads the dependencies from the internal maven repository:
+If we inspected the output of this run, we will see that now the Maven build takes into account the values specified in the settings file and downloads the dependencies from the internal maven repository:
 ```bash
-$ tkn taskrun logs simple-maven-run-pcfx7 -f -n user1-cicd
-[git-source-tasks-source-sng4m] {"level":"info","ts":1595343655.2471328,"caller":"git/git.go:105","msg":"Successfully cloned https://gitea-server-devsecops.apps.cluster-nisky-5dc3.nisky-5dc3.example.opentlc.com/user1/openshift-tasks.git @ dso4 in path /workspace/source"}
+[git-source-tasks-source-sng4m] {"level":"info","ts":1595343655.2471328,"caller":"git/git.go:105","msg":"Successfully cloned https://gitea-server-devsecops.%cluster_subdomain%/%username%/openshift-tasks.git @ dso4 in path /workspace/source"}
 [git-source-tasks-source-sng4m] {"level":"info","ts":1595343655.3214984,"caller":"git/git.go:133","msg":"Successfully initialized and updated submodules in path /workspace/source"}
 
 [mvn-goals] [INFO] Scanning for projects...
@@ -171,9 +165,9 @@ $ tkn taskrun logs simple-maven-run-pcfx7 -f -n user1-cicd
 Downloaded: http://nexus.devsecops.svc.cluster.local:8081/repository/maven-public/org/jboss/bom/jboss-eap-javaee7/7.0.1.GA/jboss-eap-javaee7-7.0.1.GA.pom (24 kB at 57 kB/s)
 ```
 
-Or, if we wanted to specify a different settings file, we could pass it as an additional param (of course, the example below would fail because the cicd-settings.xml file doesn't contain the correct configuration for a build):
-```bash
-tkn task start --inputresource source=tasks-source --param GOALS=clean  --param SETTINGS_PATH=configuration/cicd-settings.xml simple-maven
+Alternatively, if we wanted to specify a different settings file, we could pass it as an additional param (of course, the example below would fail because the `cicd-settings.xml` file doesn't contain the correct configuration for a build):
+```execute
+tkn task start --inputresource source=tasks-source-code --param GOALS=clean  --param SETTINGS_PATH=configuration/cicd-settings.xml simple-maven --showlog
 
 ```
 
@@ -190,6 +184,7 @@ Now, Maven already provides for a way to specify the location of the local maven
 ```bash
 mvn package -Dmaven.repo.local=/foo/repository
 ```
+
 With that, we can now update our Maven task to use that option and declare that it needs to be given a workspace in order to operate:
 ```yaml
 apiVersion: tekton.dev/v1alpha1
@@ -232,32 +227,35 @@ spec:
       image: gcr.io/cloud-builders/mvn:3.5.0-jdk-8
 ```
 
-With this definition, we can test that we can run our Task from the command line. Note that we are using the `--showlog` command line option in Tekton so that we can see the logs from executing the task right away and don't have to run a second command to get them:
-```bash
-tkn task start --inputresource source=tasks-source --param GOALS=clean  --param SETTINGS_PATH=configuration/cicd-settings-nexus3.xml --workspace name=maven-repo,emptyDir='' simple-maven --showlog
+With this definition, we can test that we can run our Task from the command line:
+```execute
+tkn task start --inputresource source=tasks-source-code --param GOALS=clean  --param SETTINGS_PATH=configuration/cicd-settings-nexus3.xml --workspace name=maven-repo,emptyDir='' simple-maven --showlog
 ```
 Now, this makes the Task run successfully, but doesn't really address the problem that we had in the first place - not having to re-download the dependencies every time this task runs. Because we provide an emptyDir implementation for the workspace, it always starts with an empty directory for the repository and has to re-download the dependencies. In order to solve our specific problem, we will need to dip just a tad deeper into the world of Kubernetes using a PersistentVolumeClaims (PVCs). 
 
 In short, a PVC allows a pod in Kubernetes to request persistent storage from the container platform. For convenience, when this workshop was created a PVC named `maven-repo-pvc`. For those who are curious, below is what it looks like. In short, it requests OpenShift to allocate a 1GB filesystem, and many containers can read and write to it. 
 ```yaml
-  kind: PersistentVolumeClaim
-  apiVersion: v1
-  metadata:
-    name: maven-repo-pvc
-  spec:
-    accessModes:
-      - ReadWriteMany
-    resources:
-      requests:
-        storage: 1G
-    storageClassName: ocs-storagecluster-cephfs
-    volumeMode: Filesystem
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: maven-repo-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5G
+  volumeMode: Filesystem
+  persistentVolumeReclaimPolicy: Retain
 
 ```
 
 With that, we can re-run our task, this time with the PVC in tow. 
+```execute
+tkn task start --inputresource source=tasks-source-code --param GOALS=clean  --param SETTINGS_PATH=configuration/cicd-settings-nexus3.xml --workspace name=maven-repo,claimName=maven-repo-pvc simple-maven --showlog
+```
+The output of the run looks something like the content below:
 ```bash
-akochnev@localhost workshops]$ tkn task start --inputresource source=tasks-source --param GOALS=clean  --param SETTINGS_PATH=configuration/cicd-settings-nexus3.xml --workspace name=maven-repo,claimName=maven-repo-pvc simple-maven --showlog
 Taskrun started: simple-maven-run-5llsm
 Waiting for logs to be available...
 [mvn-goals] [INFO] Scanning for projects...
@@ -286,8 +284,12 @@ Downloaded: http://nexus.devsecops.svc.cluster.local:8081/repository/maven-publi
 ```
 
 If we run that same command again, the output is much shorter - just the results of the requested goal and none of the download output:
+```execute
+tkn task start --inputresource source=tasks-source-code --param GOALS=clean  --param SETTINGS_PATH=configuration/cicd-settings-nexus3.xml --workspace name=maven-repo,claimName=maven-repo-pvc simple-maven --showlog
+```
+
+The output of the task should looks like something below:
 ```bash
-tkn task start --inputresource source=tasks-source --param GOALS=clean  --param SETTINGS_PATH=configuration/cicd-settings-nexus3.xml --workspace name=maven-repo,claimName=maven-repo-pvc simple-maven --showlog
 Taskrun started: simple-maven-run-8562d
 Waiting for logs to be available...
 
@@ -311,7 +313,7 @@ In the second run, there are no downloads that need to happen, and the build com
 
 As a side note, the command line parameters for specifying workspaces is a bit sparse, so here are a few useful options (cribbed from the [Workspaces test corpus on Github](https://github.com/tektoncd/cli/blob/master/pkg/workspaces/workspaces_test.go)):
 - Each --workspace specification on the `tkn` command line needs to include a `name=foo` argument to specify what workspace is being bound
-- To specify an emptyDir, use either `emptyDir=''` , or possibly `emptyDir=Memory` options. There is more here, but this works for testing purposes
+- To specify an emptyDir, use either `emptyDir=''` , or possibly `emptyDir=Memory` options. There is more options here, but this works for testing purposes
 - To specify an existing PersistentVolumeClaim, use the `claimName=my-claim-name` parameter
 - To specify a secret to back the workspace, you can use the `secret=foo-secret` parameter and reference the secret name. 
 
@@ -328,10 +330,10 @@ Now that we have figured out the details on how our refactored, parametrized, re
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: tasks-pipeline
+  name: tasks-dev-pipeline
 spec:
   resources:
-    - name: tasks-source-code
+    - name: pipeline-source
       type: git
 
   workspaces:
@@ -354,7 +356,7 @@ spec:
       resources:
         inputs:
           - name: source
-            resource: tasks-source-code
+            resource: pipeline-source
       workspaces:
         - name: maven-repo
           workspace: local-maven-repo
@@ -363,11 +365,14 @@ spec:
 
 With all that being done, we can now kick off the pipeline and see it do its work. You will observe that with the workspace we passed in, there is no unnecessary downloading of resources from Nexus, as they are already cached in the maven repository. 
 
+```execute
+tkn pipeline start --resource pipeline-source=tasks-source-code --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-dev-pipeline --showlog
+```
+The output of the pipeline run looks similar to the content below:
 ```bash
-tkn pipeline start --resource tasks-source-code=tasks-source --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-pipeline --showlog
-Pipelinerun started: tasks-pipeline-run-6ddwz
+Pipelinerun started: tasks-dev-pipeline-run-6ddwz
 Waiting for logs to be available...
-[build-app : git-source-tasks-source-9n7lv] {"level":"info","ts":1595353868.887183,"caller":"git/git.go:105","msg":"Successfully cloned https://gitea-server-devsecops.apps.cluster-nisky-5dc3.nisky-5dc3.example.opentlc.com/user1/openshift-tasks.git @ dso4 in path /workspace/source"}
+[build-app : git-source-tasks-source-9n7lv] {"level":"info","ts":1595353868.887183,"caller":"git/git.go:105","msg":"Successfully cloned https://gitea-server-devsecops.%cluster_subdomain%/%username%/openshift-tasks.git @ dso4 in path /workspace/source"}
 [build-app : git-source-tasks-source-9n7lv] {"level":"info","ts":1595353868.954622,"caller":"git/git.go:133","msg":"Successfully initialized and updated submodules in path /workspace/source"}
 
 [build-app : mvn-goals] [INFO] Scanning for projects...

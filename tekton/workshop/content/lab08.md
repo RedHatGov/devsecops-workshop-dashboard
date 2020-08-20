@@ -8,17 +8,17 @@ In this lab, we will add the `Unit Test` stage of the DevSecOps pipeline
 
 Since the tests in a maven project are run directly by Maven, all we need is to add a new task to our pipeline that will call the `test` goal. We can reuse our existing `simple-maven` task and pass a parameter for the `GOAL` param in the task.
 
-The only thing that is different about the `test-app` task in the pipeline is that we are using the `runAfter` attribute so that the `test-app` task runs in *after* `build-app` instead of in parallel (this will come in handy very shortly)
+The only thing that is different about the `test-app` task in the pipeline is that we are using the `runAfter` attribute so that the `test-app` task runs in *after* `build-app` instead of in parallel (this will come in handy very shortly).  > **NOTE** : since we're updating the existing pipeline YAML, pay attention to the indentation of the tasks - the new `test-app` step needs to be at the same indentation level as the `build-app` step.
 
 
 ```yaml
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: tasks-pipeline
+  name: tasks-dev-pipeline
 spec:
   resources:
-    - name: tasks-source-code
+    - name: pipeline-source
       type: git
 
   workspaces:
@@ -42,7 +42,7 @@ spec:
       resources:
         inputs:
           - name: source
-            resource: tasks-source-code
+            resource: pipeline-source
       workspaces:
         - name: maven-repo
           workspace: local-maven-repo
@@ -53,8 +53,8 @@ spec:
 
 # Run the Pipeline
 OK - so, the pipeline is a little verbose, but beyond a few of the repeated configuration parameters (e.g. like SETTINGS_PATH, resources, etc), we're just leaning the hard work that we did in the previous lab. 
-```bash
-tkn pipeline start --resource tasks-source-code=tasks-source --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-pipeline --showlog
+```execute
+tkn pipeline start --resource pipeline-source=tasks-source-code --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-dev-pipeline --showlog
 
 ```
 

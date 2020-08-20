@@ -8,9 +8,9 @@ In this section, we will add the "Code Analysis" stage into the pipeline
 
 We will leverage the Maven Sonar plugin to run SonarQube scanning against our source code.
 
-SonarQube is an open source static code analysis tool that we can use to automate running security scans against your source code to further improve the security of your application.  Every time you check-in code, SonarQube will scan the quality and perform a threat analysis of that code.
+SonarQube is an open source static code analysis tool that we can use to automate running security scans against your source code to further improve the security of your application.  Every time we run the tool, SonarQube will scan the quality and perform a threat analysis of that code.
 
-We leverage the sonarqube maven plugin and specify the maven goal "sonar:sonar" to run our project leveraging the sonarqube api.
+We leverage the sonarqube maven plugin and specify the maven goal `sonar:sonar` to run our project leveraging the sonarqube api.
 
 SonarQube's security rules originate from these standards:
 
@@ -26,14 +26,16 @@ With the information above, we can again add an extra step to the pipeline and r
 * Since we want the Code Analysis to run in parallel with the Unit Tests, we can ask Tekton to run this `code-analysis` task *after* the build, and that will make the `test-app` and `code-analysis` run in parallel. It's *that* easy !!! 
 * We will use the OpenShift service name for SonarQube so that the build can access the running SonarQube instance (in the devsecops project)
 
+Update the pipeline with the content of the `code-analysis` step below. 
+
 ```yaml
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: tasks-pipeline
+  name: tasks-dev-pipeline
 spec:
   resources:
-    - name: tasks-source-code
+    - name: pipeline-source
       type: git
 
   workspaces:
@@ -62,7 +64,7 @@ spec:
       resources:
         inputs:
           - name: source
-            resource: tasks-source-code
+            resource: pipeline-source
       workspaces:
         - name: maven-repo
           workspace: local-maven-repo
@@ -71,8 +73,8 @@ spec:
 ```
 # Test Your Pipeline
 
-```bash
-tkn pipeline start --resource tasks-source-code=tasks-source --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-pipeline --showlog
+```execute
+tkn pipeline start --resource pipeline-source=tasks-source-code --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-dev-pipeline --showlog
 
 ```
 
@@ -80,17 +82,18 @@ tkn pipeline start --resource tasks-source-code=tasks-source --workspace name=lo
 
 # SonarQube Dashboard
 
-Once we build the full pipeline and run it, we will log into SonarQube and view the various metrics, stats, and code coverage as seen from the screenshot below.
+Once we build the full pipeline and run it, we will log into [SonarQube](https://sonarqube-devsecops.%cluster_subdomain%) and view the various metrics, stats, and code coverage as seen from the screenshot below.
 
-To get the URL of the SonarQube dashboard, run the command:
-```bash
+To get the URL of the SonarQube dashboard, we can also run the command:
+```execute
 oc get route sonarqube -n devsecops
-NAME        HOST/PORT                                                                    PATH   SERVICES    PORT    TERMINATION     WILDCARD
-sonarqube   sonarqube-devsecops.apps.cluster-nisky-0450.nisky-0450.example.opentlc.com          sonarqube   <all>   edge/Redirect   None
-
 ```
 
-Paste the URL in your browser and log in with your workshop credentials. 
+```bash
+NAME        HOST/PORT                                                                    PATH   SERVICES    PORT    TERMINATION     WILDCARD
+sonarqube   sonarqube-devsecops.%cluster_subdomain%          sonarqube   <all>   edge/Redirect   None
+
+```
 
 ![SonarQube dashboard](images/sonqarqube-tasks-dashboard.png)
 

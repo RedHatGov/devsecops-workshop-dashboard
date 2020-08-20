@@ -1,6 +1,7 @@
 This lab provides a quick tour of the console to help you get familiar with the user interface along with some key terminology we will use in subsequent lab content.
 
 ## Key Terms
+
 We will be using the following terms throughout the workshop labs so here are some basic definitions you should be familiar with. You'll learn more terms along the way, but these are the basics to get you started.
 
 * **Container** - Your software wrapped in a complete filesystem containing everything it needs to run
@@ -17,10 +18,16 @@ We will be using the following terms throughout the workshop labs so here are so
 * **Pipeline** - Automates the control, building, deploying, and promoting your applications on OpenShift
 
 ## Dashboard Tour
+
 This workshop is provisioned with a special dashboard that gives you easy access to a web terminal with the  `oc` command line tool pre-installed, the OpenShift web console, and Red Hat's in-browser IDE: CodeReady Workspaces. Let's get started by logging into each of these and checking the status of the platform.
 
 ### View projects with `oc`
+
 In the Terminal tab, check to see what projects you have access to:
+
+#### NOTE: Execution blocks
+
+Throughout this workshop, sometimes a code block will be present with a small play button on the right-hand side. When you see these blocks, you can either click the button to execute it in your terminal pane automatically, or copy and paste or type the command manually. It's up to you!
 
 ```execute
 oc get projects
@@ -29,12 +36,14 @@ oc get projects
 
 ### Now check in the Web Console
 
-<img src="images/ocp-login.png" width="600"><br/>
+Open the Console tab in your dashboard. You may start off in the Developer view. If you change that to Administrator using the pulldown in the top left you should see your available projects. If none had existed already, you would see a button to create one.
 
-Open the Console tab in your dashboard, and you should see your available projects - or a button to create a project if none exist already.
+![OCP Dashboard Personas](images/ocp_dashboard_persona.png)
 
 ### Access your personal developer workspace
+
 As part of this workshop, you'll have your own developer workspace, equipped with developer tooling and plugins, all running in a container. Open the CodeReady Workspaces tab to view the workspace we've created for you. We'll explore this in more detail later on.
 
 ### Summary
+
 You should now be ready to get hands-on with our workshop labs.
