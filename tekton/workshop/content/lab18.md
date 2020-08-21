@@ -205,8 +205,7 @@ spec:
     - name: GOALS
       type: string
       description: Maven goals to execute, delimited by spaces
-      default:
-      - package
+      default: package
     - name: POM_PATH
       type: string
       description: Relative path to the pom.xml of the project (if located outside of the root of the pipeline resource)
