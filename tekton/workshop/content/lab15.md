@@ -14,7 +14,7 @@ Indeed, we've used just such a Devfile to create a workspace for *you*, our newe
 ![Click Workspace](images/click_workspace.png)
 
 ## Editing code in your workspace
-If you have experience with Visual Studio Code, the look and feel of your workspace should be familiar. Click **Explorer** Icon in the left-hand pane (two sheets of paper with the corner folded over). You'll notice the `openshift-tasks` project has been imported for you. *Now, what was our task again?* Ah yes, increasing code coverage. Happily, we already have the code for an additional unit test handy, but it's currently disabled. Hit **Ctrl+P** (or **Cmd+P** on a Mac) and enter `UserResourceTest.java`. 
+If you have experience with Visual Studio Code, the look and feel of your workspace should be familiar. Click the **Explorer** Icon in the left-hand pane (two sheets of paper with the corner folded over). You'll notice the `openshift-tasks` project has been imported for you. *Now, what was our task again?* Ah yes, increasing code coverage. Happily, we already have the code for an additional unit test handy, but it's currently disabled. Hit **Ctrl+P** (or **Cmd+P** on a Mac) and enter `UserResourceTest.java`. 
 
 *If you're having trouble with the shortcut, you can expand the file explorer to* `openshift-tasks/src/test/java/org/jboss/as/quickstarts/tasksrs/service/UserResourceTest.java`.
 
