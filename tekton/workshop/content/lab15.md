@@ -5,6 +5,12 @@ If you had a chance to check Sonarqube for the results of the static code analys
 
 ![5.9% Coverage](images/5.9_coverage.png)
 
+If you want to check for yourself, run the following command to grab the Sonarqube report URL, and open it in a tab in your browser.
+
+```execute
+echo https://$(oc get route -n devsecops sonarqube -o jsonpath={.spec.host})/dashboard?id=org.jboss.quickstarts.eap%3Ajboss-tasks-rs
+```
+
 Normally, such low coverage should break the build and stop the pipeline, but fortunately for us, Sonarqube is configured with a very permissive Quality Gate. It doesn't enforce any constraints *at all*, as a matter of fact. Nevertheless, let's address this by writing another unit test to expand our code coverage a bit. To do this, we're going to use **CodeReady Workspaces**, Red Hat's in-browser IDE.
 
 ## CodeReady Workspaces to the Rescue
@@ -77,7 +83,7 @@ We need to uncomment lines 30-38, which you can do by manually deleting the two 
 
 ![Push Git Fix](images/push_git_fix.png)
 
-The git commit should trigger a fresh pipeline run. Let's cross our fingers while we await our fate. This time, we'll watch from the Web Console. Switch to the **Console** tab in your dashboard, and find **Pipeline Runs** under the **Pipelines** submenu in the left-hand pane. Then select the first Pipeline Run in the list:
+The git commit should trigger a fresh pipeline run. This time, we'll watch from the Web Console. Switch to the **Console** tab in your dashboard, and find **Pipeline Runs** under the **Pipelines** submenu in the left-hand pane. Select the first Pipeline Run in the list, and we'll cross our fingers while we await our fate.
 
 ![Pipeline Start](images/pipeline_start.png)
 
@@ -89,7 +95,11 @@ The git commit should trigger a fresh pipeline run. Let's cross our fingers whil
 
 <br>
 
-Now let's check the updated Sonarqube Report.
+Now let's check the updated Sonarqube Report. Run the following command to grab the Sonarqube report URL, and open it in a tab in your browser.
+
+```execute
+echo https://$(oc get route -n devsecops sonarqube -o jsonpath={.spec.host})/dashboard?id=org.jboss.quickstarts.eap%3Ajboss-tasks-rs
+```
 
 ![8.5% Coverage](images/8.5_coverage.png)
 
