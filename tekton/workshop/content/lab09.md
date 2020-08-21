@@ -52,11 +52,7 @@ spec:
         name: simple-maven
       params:
           - name: GOALS
-            value: 
-            - compile
-            - sonar:sonar
-            - '-Dsonar.host.url=http://sonarqube.devsecops.svc.cluster.local:9000'
-            - '-DskipTests=true' 
+            value: 'verify sonar:sonar -Dsonar.host.url=http://sonarqube.devsecops.svc.cluster.local:9000' 
           - name: SETTINGS_PATH
             value: configuration/cicd-settings-nexus3.xml
           - name: POM_PATH

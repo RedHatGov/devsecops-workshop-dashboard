@@ -113,7 +113,7 @@ With this Task, we can now test the task run:
 tkn task start --param source_image=%username%-dev/tekton-tasks:latest --param target_image=%username%/tekton-tasks:quay2 send-to-quay --showlog
 ```
 
-We can see the TasRun succeed - we're in business ! 
+We can see the `TaskRun` succeed - we're in business ! 
 
 
 # Add Clair Container Scan to Pipeline

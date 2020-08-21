@@ -26,9 +26,7 @@ spec:
         name: simple-maven
       params:
           - name: GOALS
-            value: 
-            - install
-            - -DskipTests=true     
+            value: 'install -DskipTests=true'     
           - name: SETTINGS_PATH
             value: configuration/cicd-settings-nexus3.xml
           - name: POM_PATH
@@ -47,8 +45,7 @@ spec:
         name: simple-maven
       params:
           - name: GOALS
-            value: 
-            - test 
+            value: test 
           - name: SETTINGS_PATH
             value: configuration/cicd-settings-nexus3.xml
           - name: POM_PATH
@@ -69,11 +66,7 @@ spec:
         name: simple-maven
       params:
           - name: GOALS
-            value: 
-            - compile
-            - sonar:sonar
-            - '-Dsonar.host.url=http://sonarqube.devsecops.svc.cluster.local:9000'
-            - '-DskipTests=true' 
+            value: 'verify sonar:sonar -Dsonar.host.url=http://sonarqube.devsecops.svc.cluster.local:9000' 
           - name: SETTINGS_PATH
             value: configuration/cicd-settings-nexus3.xml
           - name: POM_PATH
@@ -94,10 +87,7 @@ spec:
         name: simple-maven
       params:
           - name: GOALS
-            value: 
-            - deploy
-            - '-DskipTests=true'
-            - '-Pnexus3' 
+            value: 'deploy -DskipTests=true -Pnexus3' 
           - name: SETTINGS_PATH
             value: configuration/cicd-settings-nexus3.xml
           - name: POM_PATH
@@ -213,8 +203,8 @@ metadata:
 spec:
   params:
     - name: GOALS
-      type: array
-      description: Maven goals to execute
+      type: string
+      description: Maven goals to execute, delimited by spaces
       default:
       - package
     - name: POM_PATH
@@ -234,15 +224,8 @@ spec:
       description: The local maven repository to use for caching Maven artifacts
   steps:
     - name: mvn-goals
-      args:
-        - $(params.GOALS)
-        - -s
-        - $(inputs.resources.source.path)/$(params.SETTINGS_PATH)
-        - -f 
-        - $(inputs.resources.source.path)/$(params.POM_PATH)
-        - -Dmaven.repo.local=$(workspaces.maven-repo.path)'
-      command:
-        - /usr/bin/mvn
+      script: |
+        /usr/bin/mvn $(params.GOALS) -s $(inputs.resources.source.path)/$(params.SETTINGS_PATH) -f $(inputs.resources.source.path)/pom.xml -Dmaven.repo.local=$(workspaces.maven-repo.path)
       image: gcr.io/cloud-builders/mvn:3.5.0-jdk-8
 ```
 ```yaml
