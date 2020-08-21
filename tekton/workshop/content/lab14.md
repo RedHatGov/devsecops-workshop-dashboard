@@ -107,7 +107,6 @@ You will be redirected to the `Webhooks` screen, click on the webhook that you j
 
 ![Webhook Pipelinerun](images/webhook_pipelinerun.png)
 
-* Finally, test the delivery by making a test commit in the Gitea web UI. Navigate to the root of the `openshift-tasks` app and edit the `README` by clicking on the pencil icon, and adding a blank line and committing the change. Immediately, you will see the `tekton-task` pipeline being triggered again. 
 
 # Add a Webhook for the stage pipeline. 
 
