@@ -1,15 +1,9 @@
 # Triggering the Trusted Software Supply Chain
 Now that our triggers are in place, let's test out the supply chain by performing a little application development.
 
-If you had a chance to check Sonarqube for the results of the static code analysis scan, you may have noticed that our **code coverage**, which is to say: *the percentage of code which is executed during unit testing*, comes in at a not-so-hot **5.9%**. 
+If you had a chance to check [SonarQube](https://sonarqube-devsecops.%cluster_subdomain%/dashboard?id=%username%-openshift-tasks) for the results of the static code analysis scan, you may have noticed that our **code coverage**, which is to say: *the percentage of code which is executed during unit testing*, comes in at a not-so-hot **5.9%**. 
 
 ![5.9% Coverage](images/5.9_coverage.png)
-
-If you want to check for yourself, run the following command to grab the Sonarqube report URL, and open it in a tab in your browser.
-
-```execute
-echo https://$(oc get route -n devsecops sonarqube -o jsonpath={.spec.host})/dashboard?id=org.jboss.quickstarts.eap%3Ajboss-tasks-rs
-```
 
 Normally, such low coverage should break the build and stop the pipeline, but fortunately for us, Sonarqube is configured with a very permissive Quality Gate. It doesn't enforce any constraints *at all*, as a matter of fact. Nevertheless, let's address this by writing another unit test to expand our code coverage a bit. To do this, we're going to use **CodeReady Workspaces**, Red Hat's in-browser IDE.
 
@@ -95,11 +89,8 @@ The git commit should trigger a fresh pipeline run. This time, we'll watch from 
 
 <br>
 
-Now let's check the updated Sonarqube Report. Run the following command to grab the Sonarqube report URL, and open it in a tab in your browser.
+Now let's refresh the Sonarqube Report. Here's the [link](https://sonarqube-devsecops.%cluster_subdomain%/dashboard?id=%username%-openshift-tasks) the in case you closed it.
 
-```execute
-echo https://$(oc get route -n devsecops sonarqube -o jsonpath={.spec.host})/dashboard?id=org.jboss.quickstarts.eap%3Ajboss-tasks-rs
-```
 
 ![8.5% Coverage](images/8.5_coverage.png)
 
