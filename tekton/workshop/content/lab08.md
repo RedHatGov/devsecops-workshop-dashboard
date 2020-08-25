@@ -33,8 +33,7 @@ spec:
         name: simple-maven
       params:
           - name: GOALS
-            value: 
-            - test 
+            value: test 
           - name: SETTINGS_PATH
             value: configuration/cicd-settings-nexus3.xml
           - name: POM_PATH

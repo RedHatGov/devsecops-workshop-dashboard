@@ -1,177 +1,97 @@
-# Introduction
+# Triggering the Trusted Software Supply Chain
+Now that our triggers are in place, let's test out the supply chain by performing a little application development.
 
-In this lab we will add Container Vulnerability Scanning through Clair
+If you had a chance to check [SonarQube](https://sonarqube-devsecops.%cluster_subdomain%/dashboard?id=%username%-openshift-tasks) for the results of the static code analysis scan, you may have noticed that our **code coverage**, which is to say: *the percentage of code which is executed during unit testing*, comes in at a not-so-hot **5.9%**. 
 
-![Clair Vulnerability Scanning](images/openshift-pipeline-quay.png)
+![5.9% Coverage](images/5.9_coverage.png)
 
-The workshop environment includes an instance of Red Hat Quay container registry.  In a browser, open the following URL `https://quay.%cluster_subdomain%` and log in with your username. 
-![Quay Repositories](images/quay_repos.png)
+Normally, such low coverage should break the build and stop the pipeline, but fortunately for us, Sonarqube is configured with a very permissive Quality Gate. It doesn't enforce any constraints *at all*, as a matter of fact. Nevertheless, let's address this by writing another unit test to expand our code coverage a bit. To do this, we're going to use **CodeReady Workspaces**, Red Hat's in-browser IDE.
 
-Click on the `Create New Repository` button, name it `tekton-tasks` and choose it to be a private repository. 
-![New Repo](images/quay_new_repo.png)
+## CodeReady Workspaces to the Rescue
+Navigate to the **CodeReady Workspaces** tab on your dashboard, and click on **Stacks** in the left-hand pane to explore the development stacks that come with CodeReady Workspaces out of the box. These are curated to offer readily available development environments for a variety of languages and frameworks. If you select one of them, you'll see that they're backed by a yaml **Devfile** that allows you to preload things like *plugins*, *git repositories*, or *command shortcuts* into the workspace so that onboarding new developers is faster than ever.
 
+Indeed, we've used just such a Devfile to create a workspace for *you*, our newest developer! Click on **java-eap-maven-%username%** under *RECENT WORKSPACES* in the left-hand pane to open it.
+![Click Workspace](images/click_workspace.png)
 
-# Local Development - Explore Quay
-> **NOTE**
-> The section below allows for exploration from a local workstation that has podman and skopeo installed. If you don't have these available, review the steps below and then proceed to the [Create Push-to-Quay task](#create-push-to-quay-task)
+## Editing code in your workspace
+If you have experience with Visual Studio Code, the look and feel of your workspace should be familiar. Click the **Explorer** Icon in the left-hand pane (two sheets of paper with the corner folded over). You'll notice the `openshift-tasks` project has been imported for you. *Now, what was our task again?* Ah yes, increasing code coverage. Happily, we already have the code for an additional unit test handy, but it's currently disabled. Hit **Ctrl+P** (or **Cmd+P** on a Mac) and enter `UserResourceTest.java`. 
 
-Now that we have a new repository, we can push and pull images from this repository.  
+*If you're having trouble with the shortcut, you can expand the file explorer to* `openshift-tasks/src/test/java/org/jboss/as/quickstarts/tasksrs/service/UserResourceTest.java`.
 
-```bash
+Look for the test called `getUsersSortedByTask()`; it should look like this:
+```
+@Test
+// TODO: comment out to make the test run
+@Ignore
+public void getUsersSortedByTask() {
+    List<User> users = userResource.getUsers();
 
-$oc tag tekton-tasks:latest tekton-tasks:quay1 -n %username%-dev
+    verify(userDao).getAll();
 
-$ podman run -it --entrypoint /bin/bash quay.io/skopeo/stable
+    assertEquals("user2", users.get(0).getUsername());
+    assertEquals("user3", users.get(1).getUsername());
+    assertEquals("user1", users.get(2).getUsername());
 
-$ skopeo login default-route-openshift-image-registry.%cluster_subdomain%/%username%-dev/tekton-tasks
-
-$ skopeo login https://quay.%cluster_subdomain%/repository/%username%/tekton-tasks --tls-verify=false
-
-$ skopeo  copy docker://default-route-openshift-image-registry.%cluster_subdomain%/%username%-dev/tekton-tasks:latest docker://quay.%cluster_subdomain%/%username%/tekton-tasks:quay1 --src-tls-verify=false --dest-tls-verify=false
-
+}
 ```
 
-Now, if we navigate to the Quay repository for `tekton-tasks` we can see the vulnerabilities that have been found in the image. 
-
-
-# Create Push-to-Quay task
-
-Now that we are fairly confident in working with Tekton Tasks, let's use some of the niceties that we can lean on based on our experience so far. As before, the easiest path forward is to create a standalone TaskRun with the TaskSpec bundled in it in order to work out the details of the task. 
-
-A few notable details below: 
-* The container image for Skopeo is `quay.io/skopeo/stable`
-* We will use the `pipeline` Service Account because that service account in the `%username%-cicd% project is already able to authenticate to both Quay and the internal image registry
-* Instead of using the Route for the internal registry, we use the internal service URL - `image-registry.openshift-image-registry.svc.cluster.local:5000`
-* Instead of using the Quay route, we use the internally accessible service at `quayecosystem-quay.quay-enterprise.svc.cluster.local:443`
-* We include the `--debug` flag to show additional details in case the operation is failing
-
-
-```yaml
-apiVersion: tekton.dev/v1beta1
-kind: TaskRun
-metadata:
-  generateName: skopeo-quay-copy-
-spec:
-  serviceAccountName: pipeline
-  taskSpec:
-    steps:
-    - name: skopeo-copy
-      args:
-        - copy 
-        - --debug
-        - docker://image-registry.openshift-image-registry.svc.cluster.local:5000/%username%-dev/tekton-tasks:latest  
-        - docker://quayecosystem-quay.quay-enterprise.svc.cluster.local:443/%username%/tekton-tasks:quay
-        - --src-tls-verify=false 
-        - --dest-tls-verify=false
-      command:
-        - /usr/bin/skopeo
-      image: quay.io/skopeo/stable
+Notice the `@Ignore` annotation on line 47; that signals to our pipeline that this test should be skipped. Let's *unskip* it by commenting out the annotation using two forward slashes, like this:
 ```
-Now, if we navigate to the [Quay Repository](https://quay.%cluster_subdomain%/repository/%username%/tekton-tasks) we can see the results of our new container image being stored and scanned. 
-
-![Clair Vulnerabilities Summary](images/quay_clair_vulns_summary.png)
-
-![Clair Vulns Details](images/quay_vulns_details.png)
-
-Once we see this TaskRun completing successfully, we can migrate the Task spec to a standalone task and parametrize it as needed. Below are the resources at hand. A few notable items:
-* We could create explicit PipelineResources for the source and target images (in quay and the internal registry); however, we would need to create a new one for each Revision, which doesn't make a lot of sense.  
-
-
-```yaml
-apiVersion: tekton.dev/v1beta1
-kind: Task
-metadata:
-  name: send-to-quay
-spec:
-  params:
-  - description: >-
-      Source (project/image:tagName) and image:rev to push, e.g.
-      %username%-dev/tekton-tasks:latest
-    name: source_image
-    type: string
-  - description: >-
-      The target (user/repo:tagName) where to push in quay, e.g.
-      %username%/tekton-tasks:quay1
-    name: target_image
-    type: string
-
-  steps:
-  - name: skopeo-copy
-    args:
-      - copy 
-      - docker://image-registry.openshift-image-registry.svc.cluster.local:5000/$(params.source_image)
-      - docker://quayecosystem-quay.quay-enterprise.svc.cluster.local:443/$(params.target_image)
-      - --src-tls-verify=false 
-      - --dest-tls-verify=false
-    command:
-      - /usr/bin/skopeo
-    image: quay.io/skopeo/stable
+@Test
+// TODO: comment out to make the test run
+// @Ignore
+public void getUsersSortedByTask() {
+    List<User> users = userResource.getUsers();
+...
 ```
 
-With this Task, we can now test the task run:
+Next, click the **Source Control** Icon in the left-hand pane and enter a commit message, like `Uncomment unit test`:
+![Commit Message](images/commit_message.png)
+
+Click the check mark above the text box to commit your changes. The editor should present a dialogue box offering to Stage them first; click **Always**.
+
+Next, we need to push the commit from your workspace back up to the git repository. Click the three dots above the commit message text box, and select **Push** from the context menu:
+![Git Push](images/git_push.png)
+
+Git will ask for your credentials, so enter `%username%` and your openshift password (e.g. `openshift`) when prompted.
+
+With our webhook in place, the git commit should trigger a new pipeline run. Now **this** is DevSecOps! Let's sit back and watch the logs as the pipeline does all the hard work.
+
 ```execute
-tkn task start --param source_image=%username%-dev/tekton-tasks:latest --param target_image=%username%/tekton-tasks:quay2 send-to-quay --showlog
+tkn pr logs $(tkn pr list --limit 1 -o jsonpath="{.items[0].metadata.name"}) -f
 ```
 
-We can see the TasRun succeed - we're in business ! 
+## Onward
+As this pipeline run proceeds, take moment to bask in the success of what we've accomplished. With just a git commit, we've set the secure software factory in motion. Our pipeline will execute stringent tests against our code so that we can deploy with full confidence... *Wait a minute!*
+
+![Pipeline Fail](images/pipeline_fail.png)
 
 
-# Add Clair Container Scan to Pipeline
+Our new unit test failed! That means we've discovered a **bug** <i class="fa fa-bug"></i>. The pipeline is paying off already. Who *knows* what bad things could happen if `Users` aren't properly sorted! Anyway, let's go back to **CodeReady Workspaces** and fix it.
 
-We can now update our Pipeline to include the `Clair Container Vulnerability Scan` step, right after the `create-image` stage.  Also, note that the `runAfter` attribute of the `deploy-to-dev` task needs to be updated to follow the `container-vulnerability-scan` task invocation. 
+Happily, the fix has already been written; it's just been commented out. In your workspace, hit **Ctrl+P** (or **Cmd+P** on a Mac) and enter `UserResource.java`. 
 
-```yaml
-apiVersion: tekton.dev/v1beta1
-kind: Pipeline
-metadata:
-  name: tasks-dev-pipeline
-spec:
-  resources:
-    - name: pipeline-source
-      type: git
+*If you're having trouble with the shortcut, you can expand the file explorer to* `openshift-tasks/src/main/java/org/jboss/as/quickstarts/tasksrs/service/UserResource.java`.
 
-  workspaces:
-    - name: local-maven-repo
+We need to uncomment lines 30-38, which you can do by manually deleting the two forward slashes at the beginning of each line, *or* by highlighting the relevant lines and pressing **Ctrl+/**  - that's a forward slash - (or **Cmd+/** on a Mac). Then we need to commit our changes once more, using a message like `Uncomment user sort`. Once committed, we need to Push again, entering our username and password when prompted.
 
-  tasks:
-    - name: build-app
-      # ... snipped for brevity ... 
-    - name: test-app
-      # ... snipped for brevity .. 
-    - name: code-analysis
-      # ... snipped for brevity
-    - name: archive
-      # ... snipped for brevity
-    - name: create-image
-      # ... snipped for brevity
-    - name: container-vulnerability-scan
-      taskRef:
-        kind: Task
-        name: send-to-quay
-      params:
-          - name: source_image
-            value: %username%-dev/tekton-tasks:$(tasks.git-rev.results.gitsha)
-          - name: target_image
-            value: %username%/tekton-tasks:$(tasks.git-rev.results.gitsha)
-      runAfter:
-          - create-image  
-    - name: deploy-to-dev
-      taskRef:
-        # ... snipped for brevity
-      runAfter:
-          - container-vulnerability-scan
-```
+![Push Git Fix](images/push_git_fix.png)
 
-We can re-start the `tasks-dev-pipeline` pipeline and see it go through completion: 
-```execute
-tkn pipeline start --resource pipeline-source=tasks-source-code --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-dev-pipeline --showlog
-```
+The git commit should trigger a fresh pipeline run. This time, we'll watch from the Web Console. Switch to the **Console** tab in your dashboard, and find **Pipeline Runs** under the **Pipelines** submenu in the left-hand pane. Select the first Pipeline Run in the list, and we'll cross our fingers while we await our fate.
 
-![Container Vuln Scan Pipeline](images/pipeline_results_container_vuln_scan.png)
+![Pipeline Start](images/pipeline_start.png)
 
-If we navigate to Quay, we can also see the newly added tag (based on the gitrev) created in Quay
-![Container Vuln Quay](images/quay_container_vuln_scan_queued.png)
+***
 
-# Conclusion
+**Success!**
 
-In this lab we explored the features of Quay and its ability to run Container Vulnerability scans on images pushed into Quay. Then, we enhanced our pipeline to include a step to push our created image into Quay so that we can inspect the vulnerabilities in it, before a decision is made whether to send the application to the Stage environment
+![Pipeline Success](images/pipeline_success.png)
+
+<br>
+
+Now let's refresh the Sonarqube Report. Here's the [link](https://sonarqube-devsecops.%cluster_subdomain%/dashboard?id=%username%-openshift-tasks) the in case you closed it.
+
+
+![8.5% Coverage](images/8.5_coverage.png)
+
+*Ayyy*, **8.5%**. Not too shabby. We're well on our way! Now that we've seen the ability of a pipeline to quickly reveal defects *and* deliver corresponding fixes, let's explore how we can build on the pipeline even more.

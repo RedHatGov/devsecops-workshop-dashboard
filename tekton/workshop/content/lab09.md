@@ -25,6 +25,7 @@ SonarQube's security rules originate from these standards:
 With the information above, we can again add an extra step to the pipeline and reuse our `simple-maven` task. A few curious and powerful thing to note : 
 * Since we want the Code Analysis to run in parallel with the Unit Tests, we can ask Tekton to run this `code-analysis` task *after* the build, and that will make the `test-app` and `code-analysis` run in parallel. It's *that* easy !!! 
 * We will use the OpenShift service name for SonarQube so that the build can access the running SonarQube instance (in the devsecops project)
+* We will override the `projectName` and `projectKey` so that your scan results don't conflict with those of other workshop attendees
 
 Update the pipeline with the content of the `code-analysis` step below. 
 
@@ -52,11 +53,7 @@ spec:
         name: simple-maven
       params:
           - name: GOALS
-            value: 
-            - compile
-            - sonar:sonar
-            - '-Dsonar.host.url=http://sonarqube.devsecops.svc.cluster.local:9000'
-            - '-DskipTests=true' 
+            value: 'verify sonar:sonar -Dsonar.projectName=%username%-openshift-tasks -Dsonar.projectKey=%username%-openshift-tasks -Dsonar.host.url=http://sonarqube.devsecops.svc.cluster.local:9000' 
           - name: SETTINGS_PATH
             value: configuration/cicd-settings-nexus3.xml
           - name: POM_PATH
@@ -82,7 +79,7 @@ tkn pipeline start --resource pipeline-source=tasks-source-code --workspace name
 
 # SonarQube Dashboard
 
-Once we build the full pipeline and run it, we will log into [SonarQube](https://sonarqube-devsecops.%cluster_subdomain%) and view the various metrics, stats, and code coverage as seen from the screenshot below.
+Once we build the full pipeline and run it, we will visit [SonarQube](https://sonarqube-devsecops.%cluster_subdomain%/dashboard?id=%username%-openshift-tasks) and view the various metrics, stats, and code coverage as seen from the screenshot below.
 
 To get the URL of the SonarQube dashboard, we can also run the command:
 ```execute

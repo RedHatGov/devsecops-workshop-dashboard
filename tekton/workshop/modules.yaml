@@ -29,13 +29,15 @@ modules:
   lab13:
     name: Lab 13 -  Promote to Stage
   lab14:
-    name: Lab 14 - Trigger the Software Supply Chain
+    name: Lab 14 - Setting Up Pipeline Triggers
   lab15:
-    name: Lab 15 - Clair Vulnerability Scan
+    name: Lab 15 - Activate the Software Supply Chain
   lab16:
-    name: Lab 16 - OpenSCAP DISA STIG Scan
+    name: Lab 16 - Clair Vulnerability Scan
   lab17:
-    name: Lab 17 - Summary / Reference
+    name: Lab 17 - OpenSCAP DISA STIG Scan
+  lab18:
+    name: Lab 18 - Summary / Reference
   Fin:
     name: Fin
 

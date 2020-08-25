@@ -372,7 +372,7 @@ The output of the command is similar to the output below:
 [mvn-goals] [INFO] ------------------------------------------------------------------------
 ```
 
-So now, the last step is to take our TaskSpec and move it into a standalone task:
+So now, the last step is to take our TaskSpec and move it into a standalone task. We'll convert from `arg/command` format to `script` format here to ensure that code coverage reports are generated correctly later:
 
 ```yaml
 apiVersion: tekton.dev/v1alpha1
@@ -386,13 +386,8 @@ spec:
           type: git
   steps:
     - name: mvn-goals
-      args:
-        - clean
-        - package
-        - -f
-        - $(inputs.resources.source.path)/pom.xml
-      command:
-        - /usr/bin/mvn
+      script: |
+        /usr/bin/mvn clean package -f $(inputs.resources.source.path)/pom.xml
       image: gcr.io/cloud-builders/mvn:3.5.0-jdk-8
 ```
 

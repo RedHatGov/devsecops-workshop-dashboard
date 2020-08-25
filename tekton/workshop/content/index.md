@@ -1,11 +1,3 @@
----
-title: DevSecOps Workshop - Secure Software Factory
-menu:
-  main:
-    parent: workshops
-    pre: fa fa-play-circle
----
-
 In this workshop, you'll be building a Secure Software Factory for a Java based website leveraging several containerized tools such as Gitea, Nexus, OpenShift Pipelines, Sonarqube, and Che hosted on the OpenShift Container Platform
 
 ## Who Should Attend

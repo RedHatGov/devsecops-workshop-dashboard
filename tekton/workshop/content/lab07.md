@@ -22,13 +22,8 @@ spec:
           type: git
   steps:
     - name: mvn-goals
-      args:
-        - clean
-        - package
-        - -f 
-        - $(inputs.resources.source.path)/pom.xml
-      command:
-        - /usr/bin/mvn
+      script: |
+        /usr/bin/mvn clean package -f $(inputs.resources.source.path)/pom.xml
       image: gcr.io/cloud-builders/mvn:3.5.0-jdk-8
 ```
 
@@ -46,7 +41,7 @@ Now that we know how we can improve the task, let's make our first reusable and 
 
 Since our goal is to make this task as re-usable as possible (so that we can call it with different parameters from a pipeline), we want to be able to pass in more than one goal to be executed by Maven. 
 
-When we talk about task parameters (the same applies to Pipeline parameters), Tekton is pretty simple - everything is either a String or an array of Strings. Now, since we want to pass multiple goals to Maven, we will use an array. Additionally, since we want our Maven task to be as simple as possible to use, we will give this parameter a default value that is meaningful and simple - if you call Maven without passing a goals parameter, we would want Maven to execute the `package` goal. 
+When we talk about task parameters (the same applies to Pipeline parameters), Tekton is pretty simple - everything is either a String or an array of Strings. Since we'll be concatenating maven goals to the `mvn` command, we'll use a string, where goals are delimited by spaces. Additionally, since we want our Maven task to be as simple as possible to use, we will give this parameter a default value that is meaningful and simple - if you call Maven without passing a goals parameter, we would want Maven to execute the `package` goal. 
 
 With that, this is what our task would look like. Since this task already exists, navigate to the Task, hit the `YAML` tab, and replace the `spec` section of the resource with the content of the `spec` section below.   
 ```yaml
@@ -57,22 +52,17 @@ metadata:
 spec:
   params:
     - name: GOALS
-      type: array
-      description: Maven goals to execute
-      default:
-      - package
+      type: string
+      description: Maven goals to execute, delimited by spaces
+      default: package
   resources:
       inputs:
         - name: source
           type: git
   steps:
     - name: mvn-goals
-      args:
-        - $(params.GOALS)
-        - -f 
-        - $(inputs.resources.source.path)/pom.xml
-      command:
-        - /usr/bin/mvn
+      script: |
+        /usr/bin/mvn $(params.GOALS) -f $(inputs.resources.source.path)/pom.xml
       image: gcr.io/cloud-builders/mvn:3.5.0-jdk-8
 ```
 
@@ -101,7 +91,7 @@ tkn task start --inputresource source=tasks-source-code simple-maven --showlog
 
 However, with our newfangled ability to pass in parameters, we can now start this task and pass it the goals we want to execute:
 ```execute
-tkn task start --inputresource source=tasks-source-code  --showlog --param GOALS=clean,compile simple-maven
+tkn task start --inputresource source=tasks-source-code  --showlog --param GOALS='clean compile' simple-maven
 ```
 
 ## Adding additional parameters - POM and settings. 
@@ -121,10 +111,9 @@ metadata:
 spec:
   params:
     - name: GOALS
-      type: array
-      description: Maven goals to execute
-      default:
-      - package
+      type: string
+      description: Maven goals to execute, delimited by spaces
+      default: package
     - name: POM_PATH
       type: string
       description: Path to the pom.xml of the project (if located outside of the source root)
@@ -139,20 +128,14 @@ spec:
           type: git
   steps:
     - name: mvn-goals
-      args:
-        - $(params.GOALS)
-        - -s
-        - $(inputs.resources.source.path)/$(params.SETTINGS_PATH)
-        - -f 
-        - $(inputs.resources.source.path)/$(params.POM_PATH)
-      command:
-        - /usr/bin/mvn
+      script: |
+        /usr/bin/mvn $(params.GOALS) -s $(inputs.resources.source.path)/$(params.SETTINGS_PATH) -f $(inputs.resources.source.path)/pom.xml
       image: gcr.io/cloud-builders/mvn:3.5.0-jdk-8
 ```
 
 With this updated task definition, we can run the new task in exactly the same way as before (e.g. if we didn't want to specify a different settings file than the default):
 ```execute
-tkn task start --inputresource source=tasks-source-code --param GOALS=clean,compile simple-maven --showlog
+tkn task start --inputresource source=tasks-source-code --param GOALS='clean compile' simple-maven --showlog
 ```
 
 If we inspected the output of this run, we will see that now the Maven build takes into account the values specified in the settings file and downloads the dependencies from the internal maven repository:
@@ -194,10 +177,9 @@ metadata:
 spec:
   params:
     - name: GOALS
-      type: array
-      description: Maven goals to execute
-      default:
-      - package
+      type: string
+      description: Maven goals to execute, delimited by spaces
+      default: package
     - name: POM_PATH
       type: string
       description: Relative path to the pom.xml of the project (if located outside of the root of the pipeline resource)
@@ -215,15 +197,8 @@ spec:
       description: The local maven repository to use for caching Maven artifacts
   steps:
     - name: mvn-goals
-      args:
-        - $(params.GOALS)
-        - -s
-        - $(inputs.resources.source.path)/$(params.SETTINGS_PATH)
-        - -f 
-        - $(inputs.resources.source.path)/$(params.POM_PATH)
-        - -Dmaven.repo.local=$(workspaces.maven-repo.path)'
-      command:
-        - /usr/bin/mvn
+      script: |
+        /usr/bin/mvn $(params.GOALS) -s $(inputs.resources.source.path)/$(params.SETTINGS_PATH) -f $(inputs.resources.source.path)/pom.xml -Dmaven.repo.local=$(workspaces.maven-repo.path)
       image: gcr.io/cloud-builders/mvn:3.5.0-jdk-8
 ```
 
@@ -346,9 +321,7 @@ spec:
         name: simple-maven
       params:
           - name: GOALS
-            value: 
-            - install
-            - -DskipTests=true     
+            value: 'install -DskipTests=true'    
           - name: SETTINGS_PATH
             value: configuration/cicd-settings-nexus3.xml
           - name: POM_PATH
