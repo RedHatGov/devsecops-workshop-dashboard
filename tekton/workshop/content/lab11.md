@@ -249,7 +249,8 @@ $TASKS
           workspace: local-maven-repo
       runAfter:
           - archive
-
+EOF
+)"
 ```
 
 With that in place, restart the last Pipeline run from the [Web Console](%console_url%/k8s/ns/%username%-cicd/tekton.dev~v1beta1~PipelineRun) and observe the completion of the pipeline. Our `BuildCconfig` and `ImageStream` are again found in the [%username%-dev project](%console_url%/search/ns/user1-dev?kind=build.openshift.io~v1~BuildConfig%2Cimage.openshift.io~v1~ImageStream).
