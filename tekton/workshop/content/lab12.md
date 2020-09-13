@@ -1,6 +1,6 @@
 # Introduction
 
-In this lab we will implement the "Create Dev" and "Deploy to Dev" stages
+In this lab we will implement the **Create Dev** and **Deploy to Dev** stages
 
 ![Deploy to Dev](images/openshift-pipeline-create-dev.png)
 
@@ -43,13 +43,13 @@ oc delete service tekton-tasks -n %username%-dev
 oc delete route tekton-tasks -n %username%-dev
 ```
 
-Then, if we wanted to deploy a new instance of the application based on the image we wanted, we can run :
+Then, if we wanted to deploy a new instance of the application based on the image we wanted, we can run:
 ```execute
-oc new-app --image-stream=tekton-tasks:latest -n  %username%-dev
+oc new-app --image-stream=tekton-tasks:latest -n %username%-dev
 oc expose svc tekton-tasks -n %username%-dev
 ```
 
-Re-running the commands above re-deploys the application and it's back to running
+Re-running the commands above re-deploys the application and it's back to running.
 
 ## Create deploy-image Task
 
@@ -57,7 +57,8 @@ Now that we have the actions that need to occur, we can proceed to create a new 
 * The task script does contain a few more conditions to make sure that the resources are properly cleaned up so that the task would succeed under various scenarios
 * The step also sets the rollout of the deployment to manual so that it doesn't automatically re-deploy when a new image is pushed. 
 
-```yaml
+```execute
+oc apply -f - << EOF
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
@@ -82,58 +83,40 @@ spec:
 
         set -e -o pipefail
 
-        echo "Create new app from image stream in $(params.dev_project) project"   
+        echo "Create new app from image stream in \$(params.dev_project) project"   
 
-        oc new-app --image-stream=$(params.app_name):latest -n
-        $(params.dev_project) --as-deployment-config=true -o yaml | oc apply -n $(params.dev_project)  -f - 
+        oc new-app --image-stream=\$(params.app_name):latest -n
+        \$(params.dev_project) --as-deployment-config=true -o yaml | oc apply -n \$(params.dev_project)  -f - 
 
-        echo "Setting manual triggers on deployment $(params.app_name)"
+        echo "Setting manual triggers on deployment \$(params.app_name)"
 
-        oc set triggers dc/$(params.app_name) --manual=true -n  $(params.dev_project) 
+        oc set triggers dc/\$(params.app_name) --remove-all
 
-        if ! oc get route/$(params.app_name) -n $(params.dev_project) ; then
+        oc set triggers dc/\$(params.app_name) --manual=true -n  \$(params.dev_project) 
 
-          oc expose svc $(params.app_name) -n $(params.dev_project) || echo "Failed to create route for $(params.app_name)"
+        if ! oc get route/\$(params.app_name) -n \$(params.dev_project) ; then
+
+          oc expose svc \$(params.app_name) -n \$(params.dev_project) || echo "Failed to create route for \$(params.app_name)"
 
         fi
           
-        oc rollout latest dc/$(params.app_name) -n  $(params.dev_project)
+        oc rollout latest dc/\$(params.app_name) -n  \$(params.dev_project)
+EOF
 ```
 
-We can test the successful execution of the task from the command line :
+We can test the successful execution of the task from the command line:
 ```execute
-tkn task start --inputresource source=tasks-source-code --param app_name=tekton-tasks  --param dev_project=%username%-dev --workspace name=maven-repo,claimName=maven-repo-pvc deploy-to-dev --showlog
+tkn task start --inputresource source=tasks-source-code --param app_name=tekton-tasks  --param dev_project=%username%-dev deploy-to-dev --showlog
 ```
 
-We can experiment with this Task to make sure that it succeeds under different conditions of failure
+We can experiment with this Task to make sure that it succeeds under different conditions of failure.
 
 ## Add task to pipeline
 
 Now that we've seen the task succeed, we can add it to our pipeline and kick off a new pipeline run:
-```yaml
-apiVersion: tekton.dev/v1beta1
-kind: Pipeline
-metadata:
-  name: tasks-dev-pipeline
-spec:
-  resources:
-    - name: pipeline-source
-      type: git
-
-  workspaces:
-    - name: local-maven-repo
-
-  tasks:
-    - name: build-app
-      # ... snipped for brevity ... 
-    - name: test-app
-      # ... snipped for brevity .. 
-    - name: code-analysis
-      # ... snipped for brevity
-    - name: archive
-      # ... snipped for brevity
-    - name: create-image
-      # ... snipped for brevity
+```execute
+TASKS="$(oc get pipelines tasks-dev-pipeline -o yaml | yq r - 'spec.tasks' | yq p - 'spec.tasks')" && oc patch pipelines tasks-dev-pipeline --type=merge -p "$(cat << EOF
+$TASKS
     - name: deploy-to-dev
       taskRef:
         kind: Task
@@ -149,16 +132,19 @@ spec:
             resource: pipeline-source
       runAfter:
           - create-image
-
+EOF
+)"
 ```
+
 Execute the pipeline again: 
+
 ```execute
 tkn pipeline start --resource pipeline-source=tasks-source-code --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-dev-pipeline --showlog
 ```
 
 ![Deploy to Dev Pipeline](images/deploy_to_dev_pipeline_results.png)
 
-We can observe that the application is now running in the %username%-dev project
+We can observe that the application is now running in the %username%-dev project.
 
 # Conclusion
 

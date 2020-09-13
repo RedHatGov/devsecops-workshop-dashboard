@@ -347,7 +347,7 @@ exit
 
 ```
 
-# Create Standalone TaskRun
+# Create a Standalone TaskRun
 
 Now that we know how to use the Maven container (with the right Java version) to build our project, we can go back and have Tekton run it for us. As a first step, we will create a new TaskRun which uses an `inline` Task spec - just so that we don't have to create a separate Task object while we're still experimenting
 
@@ -483,7 +483,7 @@ Now that we can execute the task from the TaskRun, we can proceed and create our
 * Declare a single Git pipeline resource that needs to be provided to it
 * It will use this resource to invoke the simple-maven task
 
-If we want to use the Web Console, click [this link](%console-url%/k8s/ns/%username%-cicd/tekton.dev~v1beta1~Pipeline/~new/builder) to bring you to the Pipeline Creation wizard, and specify the inputs shown below:
+If we want to use the Web Console, click [this link](%console_url%/k8s/ns/%username%-cicd/tekton.dev~v1beta1~Pipeline/~new/builder) to bring you to the Pipeline Creation wizard, and specify the inputs shown below:
 ![Simple Maven Pipeline](images/simple-maven-pipeline.png)
 
 **OR** using the CLI:

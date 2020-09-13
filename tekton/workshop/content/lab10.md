@@ -1,6 +1,6 @@
 # Introduction
 
-This lab will add the "Archive" stage to the pipeline
+This lab will add the **Archive** stage to the pipeline
 
 ![Archive App Stage](images/openshift-pipeline-archive.png)
 
@@ -8,32 +8,15 @@ This lab will add the "Archive" stage to the pipeline
 
 Archiving the built and tested application into a trusted repository is important to making sure we are building with trusted parts.  We assume this application is built properly and all the previous stages have passed.  With that confidence, our built and tested application should be immutable in a trusted repository.  The repository will version or audit any changes to the application, configuration, and dependencies.
 
-We leveraged the maven nexus plugin for this deployment.  The mvn deploy step is the last step in the maven lifecycle.  The built application is archived into the nexus repository.  We can see it later once we run the pipeline.
+We leveraged the maven nexus plugin for this deployment.  The `mvn deploy` step is the last step in the maven lifecycle.  The built application is archived into the nexus repository.  We can see it later once we run the pipeline.
 
-The "-P nexus3" option activates the nexus3 profile defined in the configuration/cicd-settings-nexus3.xml
+The `-P nexus3` option activates the nexus3 profile defined in `configuration/cicd-settings-nexus3.xml`:
 
 # Update pipeline
 
-```yaml
-apiVersion: tekton.dev/v1beta1
-kind: Pipeline
-metadata:
-  name: tasks-dev-pipeline
-spec:
-  resources:
-    - name: pipeline-source
-      type: git
-
-  workspaces:
-    - name: local-maven-repo
-
-  tasks:
-    - name: build-app
-      # ... snipped for brevity ... 
-    - name: test-app
-      # ... snipped for brevity .. 
-    - name: code-analysis
-      # ... snipped for brevity
+```execute
+TASKS="$(oc get pipelines tasks-dev-pipeline -o yaml | yq r - 'spec.tasks' | yq p - 'spec.tasks')" && oc patch pipelines tasks-dev-pipeline --type=merge -p "$(cat << EOF
+$TASKS
     - name: archive
       taskRef:
         kind: Task
@@ -55,9 +38,11 @@ spec:
       runAfter:
           - test-app
           - code-analysis
+EOF
+)"
 ```
 
-One thing to call out here is that the `runAfter` attribute of the task allows us to wait for both of the tasks to complete (and be successful), before this task could run
+One thing to call out here is that the `runAfter` attribute of the task allows us to wait for both of the tasks to complete (and be successful), before this task can run.
 
 # Test Your Pipeline
 
@@ -68,9 +53,9 @@ tkn pipeline start --resource pipeline-source=tasks-source-code --workspace name
 
 ![Archive Pipeline Run Results](images/archive_pipeline_results.png)
 
-Now we can view the contents of the [Nexus repository](http://nexus-devsecops.%cluster_subdomain%). 
+Now we can view the artifact we just published in this workshop's [Nexus Repository](http://nexus-devsecops.%cluster_subdomain%). 
 
-Click the `Sign-In` button in the upper-right corner, and log in with the assigned credentials (you will be asked to change your password through the wizard - just keep the same credentials as before). Then, we can navigate to `Browse` from the left-hand navigation menu, and click into the `maven-snapshots` repository. Below is the SNAPSHOT artifacts that have been created so far: 
+Navigate to **Browse** from the left-hand navigation menu, and click into the `maven-snapshots` repository. Below is the SNAPSHOT artifacts that have been created so far: 
 
 ![Nexus artifacts](images/nexus_artifacts_tasks.png)
 

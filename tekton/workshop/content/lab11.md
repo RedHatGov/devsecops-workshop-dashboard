@@ -1,6 +1,6 @@
 # Introduction
 
-In this lab we will add the "Image Builder" and "Build Container Image"  stages in our pipeline
+In this lab we will add the **Image Builder** and **Build Container Image**  stages in our pipeline
 
 ![Image Builder Stage](images/openshift-pipeline-imagebuilder.png)
 
@@ -44,18 +44,18 @@ An OpenShift binary BuildConfig encapsulates all four steps above:
 * The BuildConfig will push the newly created image into the internal repository which we can then use to deploy 
 
 ## openshift-client ClusterTask
-Similarly to our experimentation stage in [Lab 06](lab06.md), we first need to find a pre-existing Task (such as a ClusterTask), or a container image that has the `oc` CLI. 
+Similarly to our experimentation stage in [Lab 06](lab06.md), we first need to find a pre-existing Task (such as a `ClusterTask`), or a container image that has the `oc` CLI. 
 
-Looking at the Task Catalog, we can see that there is an existing `openshift-client` ClusterTask
+Looking at the Task Catalog, we can see that there is an existing `openshift-client` `ClusterTask`
 
 ![OpenShift Client ClusterTask](images/cluster_tasks_openshift_client.png)
 
-Let's investigate that ClusterTask, it might just do the job.
+Let's investigate that `ClusterTask`; it might just do the job.
 ```execute
 tkn  clustertask describe openshift-client
 ```
 
-The details of the ClusterTask looks something similar to the output below:
+The details of the `ClusterTask` look something similar to the output below:
 ```
 Name:   openshift-client
 
@@ -79,33 +79,30 @@ Name:   openshift-client
  ∙ oc
 
 ```
-This ClusterTask comes in very handy if we need to implement a stage that just needs to send a command or two to OpenShift using the `oc` CLI. Alternatively, we could use the same container image as the ClusterTask if we need more complicated structure or behavior for the stage.  
+This `ClusterTask` comes in very handy if we need to implement a stage that just needs to send a command or two to OpenShift using the `oc` CLI. Alternatively, we could use the same container image as the `ClusterTask` if we need more complicated structure or behavior for the stage.  
 
-# Implement "Create Image" stage in pipeline 
+# Implement "Create Image" stage in the pipeline 
 
 ## Experiment and validate 
-Let's go through those steps to work through the mechanics of how this works:
-1. Download the Tasks WAR file from Nexus:
-Navigate to Nexus, login with your credentials, and browse the `maven-snapshots` repository, navigate into the org/jboss/quickstarts/jboss-tasks-rs/7.0.0-SNAPSHOT artifact and copy the link URL from the  "Path" link (from the right panel) 
-
-![Maven Snapshots Tasks](images/maven_snapshots_tasks_war.png)
-
-2. For simplicity purposes, create a separate directory (e.g. `oc-build`), and copy the downloaded war file into that folder
+Let's take a peek under the covers to see how this works:
 
 
+1. Create a working directory
 
 ```execute
 mkdir ./oc-build
 ```
-Now, download the war file into the oc-build directory (be sure to replace ). The link would look something like this : `http://nexus-devsecops.%cluster_subdomain%/repository/maven-snapshots/org/jboss/quickstarts/eap/jboss-tasks-rs/7.0.0-SNAPSHOT/jboss-tasks-rs-7.0.0-20200810.140415-1.war' . Run the command below, replacing the <jboss-tasks-war-url#> token with the URL you copied.
+2. Download the Tasks WAR file from Nexus:
 
-```bash
-wget  -O oc-build/jboss-tasks-rs-7.0.0-SNAPSHOT.war <jboss-tasks-war-url#>
+```execute
+wget -O oc-build/jboss-tasks-rs-7.0.0-SNAPSHOT.war 'http://nexus-devsecops.%cluster_subdomain%/service/rest/v1/search/assets/download?sort=version&repository=maven-snapshots&maven.groupId=org.jboss.quickstarts.eap&maven.artifactId=jboss-tasks-rs&maven.baseVersion=7.0.0-SNAPSHOT&maven.extension=war'
+
 ```
 
-1. Create a new binary build in your OpenShift user's Dev project :
+3. Create a new binary build in your OpenShift user's Dev project:
 ```execute
 oc new-build --name=tekton-tasks --image-stream jboss-eap72-openshift:1.1  --binary=true -n %username%-dev
+
 ```
 The output of the new build looks similar to the content below: 
 ```bash
@@ -147,12 +144,13 @@ With these three steps, we can see the following in the OpenShift Console:
 Now that we know the exact commands that we need in our Pipeline, let's add an extra task to make that happen. Because we want to be able to experiment with this Task until we get it right, we will put the commands in a separate Task and run it until we get it right ( and we will parametrize the task out of the box so that we can easily work with it from the pipeline). 
 
 A few things to note:
-* The task uses the `quay.io/openshift/origin-cli:latest` container image to execute the commands. If we only had to run a command-or-two for this stage, we could have used the existing ClusterTask, but because we also have to do some checking and clean-up (to make the task run repeatable), we will just lean on the same container image that the ClusterTask uses
-* The `set -e -o pipefail` makes the step fail if any of the commands fail in running (so that we don't have to check exit codes for each command)
-* Since we have access to the local Maven repo in the `maven-repo` workspace, we will use the artifact that the prior steps in the pipeline put there. In a production setup, this artifact would likely be retrieved from the Nexus artifact repository 
+* The task uses the `quay.io/openshift/origin-cli:latest` container image to execute the commands. If we only had to run a command-or-two for this stage, we could have used the existing `ClusterTask`, but because we also have to do some checking and clean-up (to make the task run repeatable), we will just lean on the same container image that the `ClusterTask` uses.
+* The `set -e -o pipefail` makes the step fail if any of the commands fail in running (so that we don't have to check exit codes for each command).
+* Since we have access to the local Maven repo in the `maven-repo` workspace, we will use the artifact that the prior steps in the pipeline put there. In a production setup, this artifact would likely be retrieved from the Nexus artifact repository.
 * Using our own Task for this stage will also allow us to extend the task as we need to if there are future changes that are required without changing the actual pipeline
   
-```yaml
+```execute
+oc apply -f - << EOF
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
@@ -186,8 +184,8 @@ spec:
 
         # This allows the new build to be created whether it exists or not
 
-        oc new-build -o yaml --name=$(params.app_name) --image-stream=jboss-eap72-openshift:1.1  --binary=true -n
-        $(params.dev_project) | oc apply -n $(params.dev_project) -f - 
+        oc new-build -o yaml --name=\$(params.app_name) --image-stream=jboss-eap72-openshift:1.1  --binary=true -n
+        \$(params.dev_project) | oc apply -n \$(params.dev_project) -f - 
     - name: build-app-image
       image: 'quay.io/openshift/origin-cli:latest'    
       script: >
@@ -198,17 +196,18 @@ spec:
         echo "Start the openshift build"  
 
 
-        rm -rf $(inputs.resources.source.path)/oc-build && mkdir -p $(inputs.resources.source.path)/oc-build/deployments 
+        rm -rf \$(inputs.resources.source.path)/oc-build && mkdir -p \$(inputs.resources.source.path)/oc-build/deployments 
 
 
-        cp $(workspaces.maven-repo.path)/$(params.artifact_path) $(inputs.resources.source.path)/oc-build/deployments/ROOT.war 
+        cp \$(workspaces.maven-repo.path)/\$(params.artifact_path) \$(inputs.resources.source.path)/oc-build/deployments/ROOT.war 
 
 
-        oc start-build $(params.app_name) --from-dir=$(inputs.resources.source.path)/oc-build -n   $(params.dev_project) --wait=true 
+        oc start-build \$(params.app_name) --from-dir=\$(inputs.resources.source.path)/oc-build -n   \$(params.dev_project) --wait=true 
 
 
   workspaces:
     - name: maven-repo
+EOF
 ```
 
 Now, let's clean up the resources that we created manually and try running the task:
@@ -227,28 +226,9 @@ We should observe the same BuildConfig and ImageStream artifacts being created i
 ## Add the task to create container image to the pipeline
 
 With all this done, we can update the pipeline to run after the archive task 
-```yaml
-apiVersion: tekton.dev/v1beta1
-kind: Pipeline
-metadata:
-  name: tasks-dev-pipeline
-spec:
-  resources:
-    - name: pipeline-source
-      type: git
-
-  workspaces:
-    - name: local-maven-repo
-
-  tasks:
-    - name: build-app
-      # ... snipped for brevity ... 
-    - name: test-app
-      # ... snipped for brevity .. 
-    - name: code-analysis
-      # ... snipped for brevity
-    - name: archive
-      # ... snipped for brevity
+```execute
+TASKS="$(oc get pipelines tasks-dev-pipeline -o yaml | yq r - 'spec.tasks' | yq p - 'spec.tasks')" && oc patch pipelines tasks-dev-pipeline --type=merge -p "$(cat << EOF
+$TASKS
     - name: create-image
       taskRef:
         kind: Task
@@ -272,10 +252,7 @@ spec:
 
 ```
 
-With that in place, re-start the last Pipeline run from the Web Console and observe the completion of the pipeline. The expected artifacts are again found in the %username%-dev project (BuildConfig, ImageStream, etc)
-```execute
-tkn pipeline start --resource pipeline-source=tasks-source-code --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-dev-pipeline --showlog
-```
+With that in place, restart the last Pipeline run from the [Web Console](%console_url%/k8s/ns/%username%-cicd/tekton.dev~v1beta1~PipelineRun) and observe the completion of the pipeline. Our `BuildCconfig` and `ImageStream` are again found in the [%username%-dev project](%console_url%/search/ns/user1-dev?kind=build.openshift.io~v1~BuildConfig%2Cimage.openshift.io~v1~ImageStream).
 
 ![Create Image completed pipeline](images/pipeline_create_image_completed.png)
 

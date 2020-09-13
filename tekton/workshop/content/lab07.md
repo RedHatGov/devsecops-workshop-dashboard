@@ -1,6 +1,6 @@
 # Introduction
 
-In this lab we will explore the steps necessary to level-up our game in working with Tekton Tasks. When we're all done, we will have the `Build` stage of our DevSecOps pipeline. 
+In this lab we will explore the steps necessary to level-up our game in working with Tekton Tasks. When we're all done, we will have the **Build** stage of our DevSecOps pipeline. 
 
 ![Unit Test Stage](images/openshift-pipeline-build.png)
 
@@ -217,7 +217,7 @@ With this definition, we can test that we can run our `Task` from the command li
 ```execute
 tkn task start --inputresource source=tasks-source-code --param GOALS=clean  --param SETTINGS_PATH=configuration/cicd-settings-nexus3.xml --workspace name=maven-repo,emptyDir='' simple-maven --showlog
 ```
-Now, this makes the `Task` run successfully, but doesn't really address the problem that we had in the first place - not having to re-download the dependencies every time this task runs. Because we provide an emptyDir implementation for the workspace, it always starts with an empty directory for the repository and has to re-download the dependencies. In order to solve our specific problem, we will need to dip just a tad deeper into the world of Kubernetes using a `PersistentVolumeClaims` (PVCs). 
+Now, this makes the `Task` run successfully, but doesn't really address the problem that we had in the first place - not having to re-download the dependencies every time this task runs. Because we provide an emptyDir implementation for the workspace, it always starts with an empty directory for the repository and has to re-download the dependencies. In order to solve our specific problem, we will need to dip just a tad deeper into the world of Kubernetes using a `PersistentVolumeClaim` (PVC). 
 
 In short, a PVC allows a pod in Kubernetes to request persistent storage from the container platform. For convenience, when this workshop was created, **a PVC named `maven-repo-pvc` was created for you**. For those who are curious, below is what it looks like. In short, it requests OpenShift to allocate a 5GB filesystem, and your containers can read and write to it. 
 ```yaml
@@ -297,9 +297,9 @@ Waiting for logs to be available...
 ```
 In the second run, there are no downloads that need to happen, and the build completes in 333 ms compared with the 857 ms from the time without the workspace being populated and persistent. Almost a 3 times improvement in the build time, not bad !!! 
 
-As a side note, the command line parameters for specifying workspaces is a bit sparse, so here are a few useful options (cribbed from the [Workspaces test corpus on Github](https://github.com/tektoncd/cli/blob/master/pkg/workspaces/workspaces_test.go)):
+As a side note, the command line parameters for specifying workspaces are a bit sparse, so here are a few useful options (cribbed from the [Workspaces test corpus on Github](https://github.com/tektoncd/cli/blob/master/pkg/workspaces/workspaces_test.go)):
 - Each --workspace specification on the `tkn` command line needs to include a `name=foo` argument to specify what workspace is being bound
-- To specify an emptyDir, use either `emptyDir=''` , or possibly `emptyDir=Memory` options. There is more options here, but this works for testing purposes
+- To specify an emptyDir, use either `emptyDir=''` , or possibly `emptyDir=Memory` options. There are more options here, but this works for testing purposes
 - To specify an existing PersistentVolumeClaim, use the `claimName=my-claim-name` parameter
 - To specify a secret to back the workspace, you can use the `secret=foo-secret` parameter and reference the secret name. 
 
@@ -309,7 +309,7 @@ As a side note, the command line parameters for specifying workspaces is a bit s
 Now that we have figured out the details on how our refactored, parametrized, reusable task will work, we can now update our pipeline to use the task with its newest features. A few things to note:
 * Just like the task, the Pipeline declares the `workspaces` (by name) that it expects to be provided at runtime
 * The pipeline, in turn, passes the workspaces it has by name to the tasks that need a workspace
-* Note that we are using the `GOALS` param as the 'escape-hatch' for parameters that we want to pass to Maven. If we wanted to be a bit more intentional, we could certainly add a "MAVEN_OPTS" param to the task
+* Note that we are using the `GOALS` param as the 'escape-hatch' for parameters that we want to pass to Maven. If we wanted to be a bit more intentional, we could certainly add a `MAVEN_OPTS` param to the task
 
 
 ```execute

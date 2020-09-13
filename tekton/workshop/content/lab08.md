@@ -1,6 +1,6 @@
 # Introduction  
 
-In this lab, we will add the `Unit Test` stage of the DevSecOps pipeline
+In this lab, we will add the **Unit Test** stage of the DevSecOps pipeline
 
 ![Unit Test Stage](images/openshift-pipeline-unittest.png)
 
@@ -39,13 +39,8 @@ EOF
 
 # Run the Pipeline
 OK - so, the pipeline is a little verbose, but beyond a few of the repeated configuration parameters (e.g. like SETTINGS_PATH, resources, etc), we're just leaning the hard work that we did in the previous lab. 
-```execute
-tkn pipeline start --resource pipeline-source=tasks-source-code --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-dev-pipeline --showlog
 
-```
-
-
-Alternatively, since we're not passing any new parameters to the pipeline, we can just re-run the previous pipeline run. 
+This time, since we're not passing any new parameters to the pipeline, we can just rerun the previous pipeline run. Click [here](%console_url%/k8s/ns/%username%-cicd/tekton.dev~v1beta1~PipelineRun) to jump to the Pipeline Runs screen, then Rerun the top entry in the list.
 
 ![Rerun Pipeline Run](images/rerun_pipelinerun.png)
 
@@ -55,4 +50,4 @@ In the Pipeline Run details screen, we can now see the two tasks in the pipeline
 
 # Conclusion
 
-In this stage we just ended up reusing our work in building a reusable task and we were able to very quickly add a new Task in the pipeline
+In this stage we just ended up reusing our work in building a reusable task and we were able to very quickly add a new Task in the pipeline.

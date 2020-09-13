@@ -1,6 +1,6 @@
 # Introduction
 
-In this section, we will add the "Code Analysis" stage into the pipeline
+In this section, we will add the **Code Analysis** stage into the pipeline.
 
 ![SonarQube Stage](images/openshift-pipeline-sonarqube.png)
 
@@ -22,31 +22,16 @@ SonarQube's security rules originate from these standards:
 
 # Add Pipeline steps for Code Analysis
 
-With the information above, we can again add an extra step to the pipeline and reuse our `simple-maven` task. A few curious and powerful thing to note : 
-* Since we want the Code Analysis to run in parallel with the Unit Tests, we can ask Tekton to run this `code-analysis` task *after* the build, and that will make the `test-app` and `code-analysis` run in parallel. It's *that* easy !!! 
+With the information above, we can again add an extra step to the pipeline and reuse our `simple-maven` task. A few curious and powerful things to note: 
+* Since we want the Code Analysis to run in parallel with the Unit Tests, we can ask Tekton to run this `code-analysis` task *after* the build, and that will make the `test-app` and `code-analysis` run in parallel. It's *that* easy!!! 
 * We will use the OpenShift service name for SonarQube so that the build can access the running SonarQube instance (in the devsecops project)
 * We will override the `projectName` and `projectKey` so that your scan results don't conflict with those of other workshop attendees
 
-Update the pipeline with the content of the `code-analysis` step below. 
+Add a new step to the pipeline using the command below: 
 
-```yaml
-apiVersion: tekton.dev/v1beta1
-kind: Pipeline
-metadata:
-  name: tasks-dev-pipeline
-spec:
-  resources:
-    - name: pipeline-source
-      type: git
-
-  workspaces:
-    - name: local-maven-repo
-
-  tasks:
-    - name: build-app
-      # ... snipped for brevity ... 
-    - name: test-app
-      # ... snipped for brevity .. 
+```execute
+TASKS="$(oc get pipelines tasks-dev-pipeline -o yaml | yq r - 'spec.tasks' | yq p - 'spec.tasks')" && oc patch pipelines tasks-dev-pipeline --type=merge -p "$(cat << EOF
+$TASKS
     - name: code-analysis
       taskRef:
         kind: Task
@@ -67,6 +52,8 @@ spec:
           workspace: local-maven-repo
       runAfter:
           - build-app
+EOF
+)"
 ```
 # Test Your Pipeline
 
