@@ -54,13 +54,14 @@ Enter information like the following:
 
 ```
 
-So, now we have created a resource manually using the `tkn` CLI. We could have similarly created the Pipeline Resource using YAML, and provided it to the `oc` cli as native Kubernetes YAML. The YAML snippet below could be used to create the same PipelineResource :
+So, now we have created a resource manually using the `tkn` CLI. We could have similarly created the Pipeline Resource using YAML, and provided it to the `oc` cli as native Kubernetes YAML. The YAML snippet below could be used to create the same `PipelineResource` :
 
 ```yaml
 apiVersion: tekton.dev/v1beta1
 kind: PipelineResource
 metadata:
   name: tasks-source-code
+  namespace: "%username%-cicd"
 spec:
   params:
     - name: url
@@ -120,18 +121,21 @@ Name:   maven
 
 Based on the output from the command above, we could run the cluster task with the following TaskRun. Unfortunately, at this time, creating a Task Run from the UI is not supported, so we'll build our own YAML (while inspecting the details of the [Task Runs docs in Tekton](https://github.com/tektoncd/pipeline/blob/master/docs/taskruns.md)). Create the TaskRun using the YAML below in your `%username%-cicd` project:
 
-```yaml
+```execute
+oc create -f - << EOF
 apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   generateName: maven-example-
+  namespace: "%username%-cicd"
 spec:
   taskRef:
     kind: ClusterTask
     name: maven
+EOF
 ```
 
-However, doing that fails - what's happening here ? Let's inspect the TaskRun that we just created (run the command and choose the latest `maven-example-` TaskRun)
+However, doing that fails - what's happening here? Let's inspect the TaskRun that we just created (run the command and choose the latest `maven-example-` `TaskRun`)
 
 ```execute
 tkn tr logs -f
@@ -144,14 +148,15 @@ Error: pod for taskrun maven-example-k9bhw not available yet
 
 ```
 
-Well, well - the error message complains about workspaces not being provided. If we re-looked at the ClusterTask we would see that it specifies two workspaces that need to be provided to use this cluster task:
+Well, well - the error message complains about workspaces not being provided. If we re-looked at the `ClusterTask` we would see that it specifies two workspaces that need to be provided to use this cluster task:
 
 * source
 * maven-settings
 
-Let's give it some empty workspaces and see if we can make it run. Create the TaskRun from the YAML below:
+Let's give it some empty workspaces and see if we can make it run. Create the `TaskRun` by running the command below:
 
-```yaml
+```execute
+oc create -f - << EOF
 apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
@@ -170,15 +175,15 @@ spec:
       emptyDir: {}
     - name: source
       emptyDir: {}
-
+EOF
 ```
 
-If we create this TaskRun and show the logs from running it, we will see an error message that there is no POM file in /workspace/source. Duh! Of course - we gave this task an empty directory as the "source" workspace, of course it will not be able to build our source - there is nothing there !!!
+If we create this TaskRun and show the logs from running it, we will see an error message that there is no POM file in /workspace/source. Duh! Of course - we gave this task an empty directory as the "source" workspace, of course it will not be able to build our source - there is nothing there!!!
 
-Run the command below and choose the latest `maven-example-` TaskRun:
+Run the command below, noting that we now use the `--last` option to automatically select the most recently executed `TaskRun`:
 
 ```execute
-tkn tr logs -f
+tkn tr logs -f --last
 ```
 The output looks similar to the listing below:
 
@@ -199,66 +204,76 @@ So, while the ClusterTask seemed like a decent first pass at how to build our ap
 
 # Local Containers: Experimentation and Feedback loops
 
----
-> **NOTE** 
-The section below is entirely optional and depends on having some tools installed locally on a local workstation that can clone source control repo (e.g. git) and run containers locally (e.g. podman). As a result, the instructions below cannot be executed in the `Terminal` of this lab. If you have `git` and `podman` installed on your local workstation (which I hope you do - here are the [Podman installation instructions](https://podman.io/getting-started/installation.html)), you can proceed with the steps below; if not, simply review the steps below and then proceed at the [Create Standalone TaskRun](#create-standalone-taskrun) section of the lab. 
-> 
-> While you can pretty reasonably use OpenShift as a way to execute a standalone container (including some of the Tekton containers we play with in this section), e.g.: `oc run  --image=gcr.io/cloud-builders/mvn -i -t mvn-builder --rm --restart=Never --command -- /bin/bash` 
-However, the examples below really lean into providing some "local resources" (e.g. such as a git repository clone) to the container, which would be more complicated in OpenShift (e.g. setting up a Persistent Volume with the checkout, providing that PV to the container, etc) which would cancel the power and simplicity of the "local development" examples below. 
+OK, now we're back to the drawing board - we couldn't use the `ClusterTask` out of the box with our existing knowledge, but let's see what we can learn from it.
 
----
+First off, let's talk about the importance of feedback loops. As engineers, we always want to have a short and tight feedback loop. The tighter the feedback loop, the faster we could experiment, and then the faster we could learn. From experience, the tightest feedback loop happens when engineers can play with things locally on their workstations. How could we do that with Tekton? Luckily, since Tekton is based entirely on running containers, we have a way!
 
-OK, now we're back to the drawing board - we couldn't use the ClusterTask out of the box with our existing knowledge, but let's see what we can learn from it.
+Reviewing the content of the `maven` `ClusterTask`, we can see exactly what container image the `ClusterTask` uses to execute our maven goals:
 
-First off, let's talk about the importance of feedback loops. As engineers, we always want to have a short and tight feedback loop. The tighter the feedback loop, the faster we could experiment, and then the faster we could learn. From experience, the tightest feedback loop happens when engineers can play with things locally on their workstations. How could we do that with Tekton ? Luckily, since Tekton is based entirely on running containers, we have a way !
+```execute
+tkn ct describe maven -o jsonpath="{.spec.steps[?(@.name=='mvn-goals')].image}" && echo
 
-Re-reviewing the content of the `maven` ClusterTask, we can see exactly what container image the ClusterTask uses : `gcr.io/cloud-builders/mvn` . If we're curious, we pull down that image and explore it by using it just like any other container. We will check what version of Maven is in there using `mvn -version`, and then we will `exit`:
-* The `-it` argument to `podman` gives us an "interactive tty/shell", whereas the `--entrypoint` argument allows us to override what will be executed when the container starts (the equivalent podman command is ``)
-
-```bash
-$ podman run -it --entrypoint /bin/bash gcr.io/cloud-builders/mvn
 ```
 
-Now that we're inside the container, let's see what Java and Maven versions are in there :
-```bash
-$ mvn -version
+If we're curious, we pull down that image and explore it by using it just like any other container. In OpenShift, we can run an individual container within a `Pod` using `oc run`. This is useful for situations like ours, when we need an ephemeral test environment. Execute the command below:
 
+```execute
+oc run mvn-builder --image=gcr.io/cloud-builders/mvn --rm -it --command -- /bin/bash
+
+```
+
+Taking a moment to unpack the arguments we provided:
+* `oc run mvn-builder` tells OpenShift to create a new `Pod` named `mvn-builder`
+* `--image`, naturally, specifies what image we want to use for this `Pod`'s container. We're replicating the pipeline context here, so let's use the same image as the `ClusterTask`
+* `--rm` indicates that this `Pod` should be *removed* when we're done  with it
+* `-it` tells `oc` to give us an *interactive tty/shell*, since we want run a few commands in the container
+* `--command` allows us to override what will be executed when the container starts. So rather than executing an **entrypoint script**, we'll just fire up a `bash` shell.
+
+Having just run the command above, your upper **Terminal** is now in a shell within the running container. Let's see what Java and Maven versions are in there:
+```execute
+mvn -version
+```
+
+*Output (example)*
+```bash
 Apache Maven 3.6.3 (cecedd343002696d0abb50b32b541b8a6ba2883f)
 Maven home: /usr/share/maven
 Java version: 14.0.1, vendor: Oracle Corporation, runtime: /usr/java/openjdk-14
 Default locale: en_US, platform encoding: UTF-8
 OS name: "linux", version: "5.6.19-300.fc32.x86_64", arch: "amd64", family: "unix"
 ```
-Let's exit the container and continue exploring. Please make a note to remember to `exit` from the container when we're done working with it in the subsequent commands below. 
 
-OK, this container uses Java 14, and our tasks app uses Java 8. This might be a problem, but we can table this issue for now and see how things go. Let's clone our `tasks` git repo and see if we can build it with this Maven container.
+OK, this container uses Java 14, but our tasks app was built with Java 8. Could this be the problem? Let's pull down our `tasks` git repo and see if we can build it with this Maven container. We're going to work out of `/tmp` to ensure our user has the necessary filesystem permissions:
 
-```bash
-$ git clone -b dso4 https://gitea-server-devsecops.%cluster_subdomain%/%username%/openshift-tasks.git openshift-tasks-dso4
+```execute
+curl https://gitea-server-devsecops.%cluster_subdomain%/%username%/openshift-tasks/archive/dso4.tar.gz | tar xz -C /tmp
+
 ```
 
-Now we've cloned the git repo into the local workstation into the openshift-tasks-dso4 directory. Now we can try to re-run the Maven container and mount that directory:
+Let's verify the code pulled down and expanded as expected:
 
-* We're mounting it into the /workspace/source directory because that's where normally Tekton would mount a PipelineResource named `source` . When we're experimenting with this image to build the sources, we want to make it as similar as we can to how Tekton will run it, so that it's super easy to make it work in Tekton afterwards
-* We're also adding the :Z option on the mount to appease SELinux
+```execute
+ls /tmp/openshift-tasks
 
-```bash
-$ podman run -v $(pwd)/openshift-tasks-dso4:/workspace/source:Z -it --entrypoint /bin/bash gcr.io/cloud-builders/mvn
-
-$ ls /workspace/source/
-```
-We should see the top-level content of the source control repository that we cloned and we mounted in the container. 
-
-```bash
-app-template.yaml  configuration  pipeline-bc.yaml  pom.xml  README.md  
-
-$ mvn clean package -f /workspace/source/pom.xml
 ```
 
-Woo-hoo!!! We verified that the app source code is in the /workspace/source directory, and we can run the build. The build runs for a while and.... Womp, womp ! It fails with a Java compile error !!!
+*Output (example)*
+```bash
+README.md  app-template.yaml  configuration  pipeline-bc.yaml  pom.xml  src
+
+```
+
+**Excellent.** Now, let's attempt to run the goals we used in our pipeline:
+
+```execute
+mvn clean package -Dmaven.repo.local=/tmp/.m2 -f /tmp/openshift-tasks/pom.xml
+
+```
+
+Woo-hoo!!! We verified that the app source code is in our test container, and we can run the build. The build runs for a while and.... Womp, womp ! It fails with a Java compile error!!!
 
 ```shell
-[ERROR] /workspace/source/src/main/java/org/jboss/as/quickstarts/tasksrs/model/Task.java:[137,16] cannot find symbol
+[ERROR] /tmp/openshift-tasks/src/main/java/org/jboss/as/quickstarts/tasksrs/model/Task.java:[137,16] cannot find symbol
   symbol:   variable JAXB
   location: class org.jboss.as.quickstarts.tasksrs.model.Task
 [INFO] 18 errors
@@ -270,24 +285,38 @@ Woo-hoo!!! We verified that the app source code is in the /workspace/source dire
 [INFO] Finished at: 2020-07-20T23:15:57Z
 [INFO] ------------------------------------------------------------------------
 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.8.0:compile (default-compile) on project jboss-tasks-rs: Compilation failure: Compilation failure:
-[ERROR] /workspace/source/src/main/java/org/jboss/as/quickstarts/tasksrs/model/User.java:[31,33] package javax.xml.bind.annotation does not exist
+[ERROR] /tmp/openshift-tasks/src/main/java/org/jboss/as/quickstarts/tasksrs/model/User.java:[31,33] package javax.xml.bind.annotation does not exist
 
 ```
 
-It looks like we can't use Java 14 to  build my app after all ! Let's  go and see what else might be in that `gcr.io/cloud-builders/mvn`
+It looks like we can't use Java 14 to  build our app after all! Let's go and see if `gcr.io/cloud-builders/mvn` offers alternative version tags in [Google's Container Registry](https://console.cloud.google.com/gcr/images/cloud-builders/GLOBAL/mvn?gcrImageListsize=30):
 
 ![Maven Container Images](images/grc_io_maven_images.png)
 
 Well, well - it looks like there is a Java 8 image there after all. Let's give that another try with a local container, we just have to use the `3.5.0-jdk-8` label and see that we can build our project.
 
-Start the container again, this time with the container with the needed Maven version:
-```bash
-$ podman run -v $(pwd)/openshift-tasks-dso4:/workspace/source:Z -it --entrypoint /bin/bash gcr.io/cloud-builders/mvn:3.5.0-jdk-8
+First, exit our initial test container, if you haven't already:
+
+```execute
+exit
+
+```
+> **NOTE**
+> If you accidentally exit your **Terminal**, you can restore it using *Reload Terminal* in the top-right dashboard menu.
+![Reload Terminal](images/reload_terminal.png)
+
+
+Then let's start a new container, this time with the needed Maven version:
+```execute
+oc run mvn-builder --image=gcr.io/cloud-builders/mvn:3.5.0-jdk-8 --rm -it --command -- /bin/bash
+
 ```
 
 Let's run the build again and see what happens
-```bash
-$ mvn clean package -f /workspace/source/pom.xml
+```execute
+curl https://gitea-server-devsecops.%cluster_subdomain%/%username%/openshift-tasks/archive/dso4.tar.gz | tar xz -C /tmp
+mvn clean package -Dmaven.repo.local=/tmp/.m2 -f /tmp/openshift-tasks/pom.xml
+
 ```
 
 The output from the command should be similar to the content below:
@@ -295,7 +324,7 @@ The output from the command should be similar to the content below:
 [INFO] Scanning for projects...
 Downloading: https://maven.repository.redhat.com/ga/org/jboss/bom/jboss-eap-javaee7/7.0.1.GA/jboss-eap-javaee7-7.0.1.GA.pom
 ... snipped for brevity ...
-[INFO] Building war: /workspace/source/target/openshift-tasks.war
+[INFO] Building war: /tmp/openshift-tasks/target/openshift-tasks.war
 [INFO] WEB-INF/web.xml already added, skipping
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS------------------------------------------------------------------------
@@ -303,22 +332,31 @@ Downloading: https://maven.repository.redhat.com/ga/org/jboss/bom/jboss-eap-java
 
 ```
 
-W00t, w00t !! The build runs for a little while and successfully completes - now we are getting somewhere !!!
+W00t, w00t!! The build runs for a little while and successfully completes - now we are getting somewhere!!!
 
 The big takeaways from the work so far:
 
-* Since Tekton runs all of the tasks in pods, we can very easily experiment with the same containers locally until we see something work
-* With a little bit of knowledge about how Tekton works, we can mount the directories in our local containers to make it as similar as possible for when we move our work into Tekton proper
+* Since Tekton runs all of the tasks in pods, we can very easily experiment with the same containers until we see something work.
+* With a little bit of knowledge about how Tekton works, replicate the container context to make it as similar as possible for when we move our work into Tekton proper.
+
+If you haven't already, go ahead and exit your container, and we'll continue onward.
+
+```execute
+exit
+
+```
 
 # Create Standalone TaskRun
 
 Now that we know how to use the Maven container (with the right Java version) to build our project, we can go back and have Tekton run it for us. As a first step, we will create a new TaskRun which uses an `inline` Task spec - just so that we don't have to create a separate Task object while we're still experimenting
 
-```yaml
+```execute
+oc create -f - << EOF
 apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   generateName: maven-java8-inline-example-
+  namespace: "%username%-cicd"
 spec:
   resources:
     inputs:
@@ -336,10 +374,11 @@ spec:
         - clean
         - package
         - -f
-        - $(inputs.resources.source.path)/pom.xml
+        - \$(inputs.resources.source.path)/pom.xml
       command:
         - /usr/bin/mvn
       image: gcr.io/cloud-builders/mvn:3.5.0-jdk-8
+EOF
 ```
 
 A couple of things to note in the TaskRun example above:
@@ -348,10 +387,10 @@ A couple of things to note in the TaskRun example above:
 * In the example above we used Tekton's parameter substitution - e.g. a PipelineResource named `foo` will be mounted in /workspace/foo, and can be referenced using the `$(inputs.resources.foo.path)` parameter substitution. Note that we're also using the `.path` suffix after the name of the resource to get its absolute path (a little bit more Tekton resource magic from the [Tekton Git repo](https://github.com/tektoncd/pipeline/blob/master/docs/resources.md#variable-substitution)
 
 
-With this, we can observe Tekton successfully run our Maven commands (choose the `maven-java8-inline-example-` TaskRun):
+With this, we can observe Tekton successfully run our Maven commands:
 
 ```execute
-tkn tr logs -f
+tkn tr logs -f --last
 ```
 The output of the command is similar to the output below:
 ```bash
@@ -374,11 +413,13 @@ The output of the command is similar to the output below:
 
 So now, the last step is to take our TaskSpec and move it into a standalone task. We'll convert from `arg/command` format to `script` format here to ensure that code coverage reports are generated correctly later:
 
-```yaml
+```execute
+oc create -f - << EOF
 apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
   name: simple-maven
+  namespace: "%username%-cicd"
 spec:
   resources:
       inputs:
@@ -387,17 +428,20 @@ spec:
   steps:
     - name: mvn-goals
       script: |
-        /usr/bin/mvn clean package -f $(inputs.resources.source.path)/pom.xml
+        /usr/bin/mvn clean package -f \$(inputs.resources.source.path)/pom.xml
       image: gcr.io/cloud-builders/mvn:3.5.0-jdk-8
+EOF
 ```
 
 Now that we have a task, we can really simplify the TaskRun:
 
-```yaml
+```execute
+oc create -f - << EOF
 apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   generateName: simple-maven-
+  namespace: "%username%-cicd"
 spec:
   resources:
     inputs:
@@ -406,11 +450,12 @@ spec:
           name: tasks-source-code
   taskRef:
     name: simple-maven
+EOF
 ```
 
-We can also see the TaskRun succeed - run the command below and choose the latest `simple-maven` task run:
+We can also see the `TaskRun` succeed:
 ```execute
-tkn tr logs -f
+tkn tr logs -f --last
 ```
 
 The output from the Task Run is similar to the content below:
@@ -440,17 +485,18 @@ Now that we can execute the task from the TaskRun, we can proceed and create our
 * Declare a single Git pipeline resource that needs to be provided to it
 * It will use this resource to invoke the simple-maven task
 
-If we want to use the Web Console:
-
+If we want to use the Web Console, click [this link](%console-url%/k8s/ns/%username%-cicd/tekton.dev~v1beta1~Pipeline/~new/builder) to bring you to the Pipeline Creation wizard, and specify the inputs shown below:
 ![Simple Maven Pipeline](images/simple-maven-pipeline.png)
 
-Or using yaml:
+**OR** using the CLI:
 
-```yaml
+```execute
+oc apply -f - << EOF
 apiVersion: tekton.dev/v1alpha1
 kind: Pipeline
 metadata:
   name: tasks-dev-pipeline
+  namespace: "%username%-cicd"
 spec:
   resources:
     - name: tasks-source-code
@@ -464,6 +510,7 @@ spec:
       taskRef:
         kind: Task
         name: simple-maven
+EOF
 ```
 
 Now, starting this pipeline is pretty straightforward, even using the GUI - the Console will launch a prompt to specify which PipelineResource needed to invoke the pipeline with:
