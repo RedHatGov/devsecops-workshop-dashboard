@@ -54,14 +54,14 @@ Enter information like the following:
 
 ```
 
-So, now we have created a resource manually using the `tkn` CLI. We could have similarly created the Pipeline Resource using YAML, and provided it to the `oc` cli as native Kubernetes YAML. The YAML snippet below could be used to create the same `PipelineResource` :
+So, now we have created a resource manually using the `tkn` CLI. We could have similarly created the Pipeline Resource using YAML, and provided it to the `oc` cli as native Kubernetes YAML. The YAML snippet below could be used to create the same `PipelineResource`. In fact, **go ahead and run this anyway**, to be sure you entered the correct options:
 
-```yaml
-apiVersion: tekton.dev/v1beta1
+```execute
+oc -n user1-cicd apply -f - << EOF
+apiVersion: tekton.dev/v1alpha1
 kind: PipelineResource
 metadata:
   name: tasks-source-code
-  namespace: "%username%-cicd"
 spec:
   params:
     - name: url
@@ -70,7 +70,9 @@ spec:
     - name: revision
       value: dso4
   type: git
+EOF
 ```
+
 
 The additional options for specifying the Git Pipeline Resource are on the [Tekton github page](https://github.com/tektoncd/pipeline/blob/master/docs/resources.md#git-resource)
 
@@ -122,12 +124,11 @@ Name:   maven
 Based on the output from the command above, we could run the cluster task with the following TaskRun. Unfortunately, at this time, creating a Task Run from the UI is not supported, so we'll build our own YAML (while inspecting the details of the [Task Runs docs in Tekton](https://github.com/tektoncd/pipeline/blob/master/docs/taskruns.md)). Create the TaskRun using the YAML below in your `%username%-cicd` project:
 
 ```execute
-oc create -f - << EOF
+oc -n %username%-cicd create -f - << EOF
 apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   generateName: maven-example-
-  namespace: "%username%-cicd"
 spec:
   taskRef:
     kind: ClusterTask
@@ -156,7 +157,7 @@ Well, well - the error message complains about workspaces not being provided. If
 Let's give it some empty workspaces and see if we can make it run. Create the `TaskRun` by running the command below:
 
 ```execute
-oc create -f - << EOF
+oc -n %username%-cicd create -f - << EOF
 apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
@@ -351,12 +352,11 @@ exit
 Now that we know how to use the Maven container (with the right Java version) to build our project, we can go back and have Tekton run it for us. As a first step, we will create a new TaskRun which uses an `inline` Task spec - just so that we don't have to create a separate Task object while we're still experimenting
 
 ```execute
-oc create -f - << EOF
+oc -n %username%-cicd create -f - << EOF
 apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   generateName: maven-java8-inline-example-
-  namespace: "%username%-cicd"
 spec:
   resources:
     inputs:
@@ -414,12 +414,11 @@ The output of the command is similar to the output below:
 So now, the last step is to take our TaskSpec and move it into a standalone task. We'll convert from `arg/command` format to `script` format here to ensure that code coverage reports are generated correctly later:
 
 ```execute
-oc create -f - << EOF
+oc -n %username%-cicd create -f - << EOF
 apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
   name: simple-maven
-  namespace: "%username%-cicd"
 spec:
   resources:
       inputs:
@@ -436,12 +435,11 @@ EOF
 Now that we have a task, we can really simplify the TaskRun:
 
 ```execute
-oc create -f - << EOF
+oc -n %username%-cicd create -f - << EOF
 apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
   generateName: simple-maven-
-  namespace: "%username%-cicd"
 spec:
   resources:
     inputs:
@@ -491,12 +489,11 @@ If we want to use the Web Console, click [this link](%console-url%/k8s/ns/%usern
 **OR** using the CLI:
 
 ```execute
-oc apply -f - << EOF
+oc -n %username%-cicd apply -f - << EOF
 apiVersion: tekton.dev/v1alpha1
 kind: Pipeline
 metadata:
   name: tasks-dev-pipeline
-  namespace: "%username%-cicd"
 spec:
   resources:
     - name: tasks-source-code
