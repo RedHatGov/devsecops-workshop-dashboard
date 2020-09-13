@@ -8,25 +8,11 @@ In this lab, we will add the `Unit Test` stage of the DevSecOps pipeline
 
 Since the tests in a maven project are run directly by Maven, all we need is to add a new task to our pipeline that will call the `test` goal. We can reuse our existing `simple-maven` task and pass a parameter for the `GOAL` param in the task.
 
-The only thing that is different about the `test-app` task in the pipeline is that we are using the `runAfter` attribute so that the `test-app` task runs in *after* `build-app` instead of in parallel (this will come in handy very shortly).  > **NOTE** : since we're updating the existing pipeline YAML, pay attention to the indentation of the tasks - the new `test-app` step needs to be at the same indentation level as the `build-app` step.
-
+The only thing that is different about the `test-app` task in the pipeline is that we are using the `runAfter` attribute so that the `test-app` task runs in *after* `build-app` instead of in parallel (this will come in handy very shortly). Since we need to add an additional  step to the pipeline, we're going to **patch** our `Pipeline` object. We've already wired up a command string for you so you don't have to worry about managing indentation:
 
 ```yaml
-apiVersion: tekton.dev/v1beta1
-kind: Pipeline
-metadata:
-  name: tasks-dev-pipeline
-spec:
-  resources:
-    - name: pipeline-source
-      type: git
-
-  workspaces:
-    - name: local-maven-repo
-
-  tasks:
-    - name: build-app
-      # ... snipped for brevity ... 
+TASKS="$(oc get pipelines tasks-dev-pipeline -o yaml | yq r - 'spec.tasks' | yq p - 'spec.tasks')" && oc patch pipelines tasks-dev-pipeline --type=merge -p "$(cat << EOF
+$TASKS
     - name: test-app
       taskRef:
         kind: Task
@@ -47,7 +33,8 @@ spec:
           workspace: local-maven-repo
       runAfter:
           - build-app
-
+EOF
+)"
 ```
 
 # Run the Pipeline
