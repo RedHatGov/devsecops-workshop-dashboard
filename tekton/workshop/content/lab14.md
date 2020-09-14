@@ -94,16 +94,16 @@ The last step is to configure Gitea to invoke this webhook
 * Log in using your `%username%` username. Click on your `openshift-tasks` repository, navigate to the `Settings` page, and on that page click on the `Webhooks` tab. 
 ![Gitea Webhook Settings](images/gitea_settings_webhook.png)
 
-Use `oc` to extract the URL of the new route that we created for the Tekton EventListener:
-```execute
-echo http://$(oc get route el-dev-tekton-event-listener -o jsonpath='{.spec.host}')
-```
+* Click on the `Add Webhook` button and choose **Gitea** as the webhook type. On the resulting page, fill in the following values: 
+  * **Target UrL**: `http://el-dev-tekton-event-listener-%username%-cicd.%cluster_subdomain%` 
+  * **Secret**: `secret1234`
+  * Everything else can stay as default. 
 
-* Click on the `Add Webhook` button and choose `Gitea` as the webhook type. On the resulting page, fill in the `el-dev-tekton-event-listener` route URL we just retreived (`http://el-dev-tekton-event-listener-%username%-cicd.%cluster_subdomain%`) in the `Target URL` field and `secret1234` in the `Secret` field - everything else can stay as default. Click the `Add Webhook` button to save.  
+* Click the **Add Webhook** button to save.  
 
 ![Gitea webhook definition](images/gitea_add_webhook_details.png)
 
-You will be redirected to the `Webhooks` screen, click on the webhook that you just created, and scroll to the bottom. Now, when you click on the `Test Delivery` button, you will see your Pipeline triggered (note that the name matched what you specified in the `TriggerTemplate`)
+You will be redirected to the **Webhooks** screen. Click on the webhook that you just created, and scroll to the bottom. Now, when you click on the **Test Delivery** button, you will see your Pipeline triggered (note that the name matched what you specified in the `TriggerTemplate`)
 
 ![Gitea Webhook Test Delivery](images/gitea_webhook_test_delivery.png)
 

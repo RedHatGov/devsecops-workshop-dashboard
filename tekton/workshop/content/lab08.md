@@ -10,7 +10,7 @@ Since the tests in a maven project are run directly by Maven, all we need is to 
 
 The only thing that is different about the `test-app` task in the pipeline is that we are using the `runAfter` attribute so that the `test-app` task runs in *after* `build-app` instead of in parallel (this will come in handy very shortly). Since we need to add an additional  step to the pipeline, we're going to **patch** our `Pipeline` object. We've already wired up a command string for you so you don't have to worry about managing indentation:
 
-```yaml
+```execute
 TASKS="$(oc get pipelines tasks-dev-pipeline -o yaml | yq r - 'spec.tasks' | yq p - 'spec.tasks')" && oc patch pipelines tasks-dev-pipeline --type=merge -p "$(cat << EOF
 $TASKS
     - name: test-app

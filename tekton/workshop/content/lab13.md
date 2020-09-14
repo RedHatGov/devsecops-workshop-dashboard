@@ -404,7 +404,7 @@ spec:
 EOF
 ```
 
-Review the output of the `tasks-dev-pipeline` pipeline - the last step in the last task announces the gitsha with which the image deployed in dev was tagged with. Take that git sha and run the `tasks-stage-pipeline` pipeline with that as a parameter (replace the <gitsha_output> token with the value from your dev pipeline):
+Review the output of the `tasks-dev-pipeline` pipeline - the last step in the last task announces the gitsha with which the image deployed in dev was tagged with. Take that git sha and run the `tasks-stage-pipeline` pipeline with that as a parameter. **Be sure to replace the <gitsha_output> token with the value from your dev pipeline**:
 
 ```copy
 tkn pipeline start tasks-stage-pipeline --showlog --param app_version=<gitsha_output>
