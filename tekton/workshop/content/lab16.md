@@ -146,46 +146,24 @@ We can see the `TaskRun` succeed - we're in business!
 
 We can now update our Pipeline to include the `Clair Container Vulnerability Scan` step, right after the `create-image` stage.  Also, note that the `runAfter` attribute of the `deploy-to-dev` task needs to be updated to follow the `container-vulnerability-scan` task invocation. 
 
-```yaml
-apiVersion: tekton.dev/v1beta1
-kind: Pipeline
-metadata:
-  name: tasks-dev-pipeline
-spec:
-  resources:
-    - name: pipeline-source
-      type: git
-
-  workspaces:
-    - name: local-maven-repo
-
-  tasks:
-    - name: build-app
-      # ... snipped for brevity ... 
-    - name: test-app
-      # ... snipped for brevity .. 
-    - name: code-analysis
-      # ... snipped for brevity
-    - name: archive
-      # ... snipped for brevity
-    - name: create-image
-      # ... snipped for brevity
-    - name: container-vulnerability-scan
-      taskRef:
-        kind: Task
-        name: send-to-quay
-      params:
-          - name: source_image
-            value: %username%-dev/tekton-tasks:$(tasks.git-rev.results.gitsha)
-          - name: target_image
-            value: %username%/tekton-tasks:$(tasks.git-rev.results.gitsha)
-      runAfter:
-          - create-image  
-    - name: deploy-to-dev
-      taskRef:
-        # ... snipped for brevity
-      runAfter:
-          - container-vulnerability-scan
+```execute
+DEPLOY_TO_DEV=$(oc get pipelines tasks-dev-pipeline -o yaml | yq r --collect - 'spec.tasks[6]' | yq w - '[0].runAfter[0]' 'container-vulnerability-scan') && TASKS="$(oc get pipelines tasks-dev-pipeline -o yaml | yq r - 'spec.tasks' | yq d - '[6]')" && cat << EOF | yq p - 'spec.tasks' > patch.yaml
+$TASKS
+- name: container-vulnerability-scan
+  taskRef:
+    kind: Task
+    name: send-to-quay
+  params:
+      - name: source_image
+        value: %username%-dev/tekton-tasks:\$(tasks.git-rev.results.gitsha)
+      - name: target_image
+        value: %username%/tekton-tasks:\$(tasks.git-rev.results.gitsha)
+  runAfter:
+      - create-image
+$DEPLOY_TO_DEV
+EOF
+oc patch pipelines tasks-dev-pipeline --type=merge -p "$(cat patch.yaml)"
+rm patch.yaml
 ```
 
 We can re-start the `tasks-dev-pipeline` pipeline and see it go through completion: 
