@@ -73,6 +73,8 @@ spec:
 EOF
 ```
 
+> **Note:** To ensure a fluid workshop experience, Kubernetes resources are created using the CLI, as we've done above. If you prefer to use the Web Console, you can use the [Import YAML](%console_url%/k8s/ns/%username%-cicd/import) view, found by clicking the **+** button at the top right of your **Console** tab. You can then paste the content found between `EOF` tags in the labguide's code block.
+> ![Import YAML](images/import_yaml.png)
 
 The additional options for specifying the Git Pipeline Resource are on the [Tekton github page](https://github.com/tektoncd/pipeline/blob/master/docs/resources.md#git-resource)
 
