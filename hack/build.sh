@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 
 # change these
-CONTAINER_IMAGE=openshift-devsecops-labguides
+CONTAINER_IMAGE=devsecops-workshop-dashboard
 DOCKERFILE_DIR=
 
 function print_usage() {
