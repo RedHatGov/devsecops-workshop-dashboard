@@ -1,6 +1,6 @@
 # Introduction
 
-In this lab we will explore the steps necessary to level-up our game in working with Tekton Tasks. When we're all done, we will have the `Build` stage of our DevSecOps pipeline. 
+In this lab we will explore the steps necessary to level-up our game in working with Tekton Tasks. When we're all done, we will have the **Build** stage of our DevSecOps pipeline. 
 
 ![Unit Test Stage](images/openshift-pipeline-build.png)
 
@@ -37,14 +37,16 @@ Tasks in Tekton are expected to be reusable. A very quick re-review of our simpl
 
 Now that we know how we can improve the task, let's make our first reusable and production-quality Tekton task. At each step of the way, we will make an incremental change and validate that the change did not break the task by running it with a TaskRun. Whenever we're done changing the Task, we will then update our pipeline with our latest version of the Task invocation
 
-## Parametrize Maven goals
+## Parameterize Maven goals
 
 Since our goal is to make this task as re-usable as possible (so that we can call it with different parameters from a pipeline), we want to be able to pass in more than one goal to be executed by Maven. 
 
 When we talk about task parameters (the same applies to Pipeline parameters), Tekton is pretty simple - everything is either a String or an array of Strings. Since we'll be concatenating maven goals to the `mvn` command, we'll use a string, where goals are delimited by spaces. Additionally, since we want our Maven task to be as simple as possible to use, we will give this parameter a default value that is meaningful and simple - if you call Maven without passing a goals parameter, we would want Maven to execute the `package` goal. 
 
-With that, this is what our task would look like. Since this task already exists, navigate to the Task, hit the `YAML` tab, and replace the `spec` section of the resource with the content of the `spec` section below.   
-```yaml
+With that, this is what our task would look like. Let's apply an update using `oc`:
+
+```execute
+oc -n %username%-cicd apply -f - << EOF
 apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
@@ -62,13 +64,15 @@ spec:
   steps:
     - name: mvn-goals
       script: |
-        /usr/bin/mvn $(params.GOALS) -f $(inputs.resources.source.path)/pom.xml
+        /usr/bin/mvn \$(params.GOALS) -f \$(inputs.resources.source.path)/pom.xml
       image: gcr.io/cloud-builders/mvn:3.5.0-jdk-8
+EOF
 ```
 
 Since we provided a default value for the GOALS parameter, we should be able to kick off a TaskRun exactly the way we did it before:
 
-```yaml
+```execute
+oc -n %username%-cicd create -f - << EOF
 apiVersion: tekton.dev/v1beta1
 kind: TaskRun
 metadata:
@@ -81,6 +85,7 @@ spec:
           name: tasks-source-code
   taskRef:
     name: simple-maven
+EOF
 ```
 
 ... or on the command line (hit 'Enter' to accept default of 'package' as the value of the `GOALS` parameter) . Note that we are using the `--showlog` command line option in Tekton so that we can see the logs from executing the task right away and don't have to run a second command to get them...
@@ -90,11 +95,12 @@ tkn task start --inputresource source=tasks-source-code simple-maven --showlog
 ```
 
 However, with our newfangled ability to pass in parameters, we can now start this task and pass it the goals we want to execute:
+
 ```execute
 tkn task start --inputresource source=tasks-source-code  --showlog --param GOALS='clean compile' simple-maven
 ```
 
-## Adding additional parameters - POM and settings. 
+## Adding additional parameters - POM and settings
 
 As is always the case, it is always a balance of making a software component reusable and customizable vs making it simple to use. From a technical POV, if we wanted to add additional arguments to Maven, we could always add them to the GOALS parameter, but that just feels wrong. 
 
@@ -103,7 +109,9 @@ First off, our current maven task assumes that the `pom.xml` is at the root of t
 If we inspect the Tasks application source repository, we will see that the source code repository has a `configuration/cicd-settings.xml` file containing some profiles, and repository settings. We want to be able to allow the passing of that value path as a parameter. 
 
 With these two parameters, this is what our updated task would look like. Update the `simple-maven` task with the content below:
-```yaml
+
+```execute
+oc apply -f - << EOF 
 apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
@@ -129,8 +137,9 @@ spec:
   steps:
     - name: mvn-goals
       script: |
-        /usr/bin/mvn $(params.GOALS) -s $(inputs.resources.source.path)/$(params.SETTINGS_PATH) -f $(inputs.resources.source.path)/pom.xml
+        /usr/bin/mvn \$(params.GOALS) -s \$(inputs.resources.source.path)/\$(params.SETTINGS_PATH) -f \$(inputs.resources.source.path)/pom.xml
       image: gcr.io/cloud-builders/mvn:3.5.0-jdk-8
+EOF
 ```
 
 With this updated task definition, we can run the new task in exactly the same way as before (e.g. if we didn't want to specify a different settings file than the default):
@@ -163,13 +172,14 @@ By specifying a maven settings file for our build, we took a first step to impro
 
 This is where Tekton `workspaces` come into play. Workspaces provide a mechanism for sharing data between tasks by allowing TaskRuns to provide parts of the filesystem of the Pod in which the Task is running. The shared filesystem can be used for storing inputs and outputs, sharing data between tasks, etc. The full details for using workspaces is in the [Tekton Workspaces docs](https://github.com/tektoncd/pipeline/blob/master/docs/workspaces.md),and they have a number of different ways they can be created (e.g. using Kubernetes Persistent Volume Claims, secrets, config maps, etc). 
 
-Now, Maven already provides for a way to specify the location of the local maven repository by passing in a `maven.repo.local` Java system property. So, if we wanted to have the Maven build to use a repository located in /foo/repository, you could run the build as follows:
+Now, Maven already provides for a way to specify the location of the local maven repository by passing in a `maven.repo.local` Java system property. You may have noticed we used this during the previous lab to cache artifacts to `/tmp/.m2`. So, if we wanted to have the Maven build to use a repository located in /foo/repository, you could run the build as follows:
 ```bash
 mvn package -Dmaven.repo.local=/foo/repository
 ```
 
 With that, we can now update our Maven task to use that option and declare that it needs to be given a workspace in order to operate:
-```yaml
+```execute
+oc apply -f - << EOF
 apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
@@ -198,17 +208,18 @@ spec:
   steps:
     - name: mvn-goals
       script: |
-        /usr/bin/mvn $(params.GOALS) -s $(inputs.resources.source.path)/$(params.SETTINGS_PATH) -f $(inputs.resources.source.path)/pom.xml -Dmaven.repo.local=$(workspaces.maven-repo.path)
+        /usr/bin/mvn \$(params.GOALS) -s \$(inputs.resources.source.path)/\$(params.SETTINGS_PATH) -f \$(inputs.resources.source.path)/pom.xml -Dmaven.repo.local=\$(workspaces.maven-repo.path)
       image: gcr.io/cloud-builders/mvn:3.5.0-jdk-8
+EOF
 ```
 
-With this definition, we can test that we can run our Task from the command line:
+With this definition, we can test that we can run our `Task` from the command line:
 ```execute
 tkn task start --inputresource source=tasks-source-code --param GOALS=clean  --param SETTINGS_PATH=configuration/cicd-settings-nexus3.xml --workspace name=maven-repo,emptyDir='' simple-maven --showlog
 ```
-Now, this makes the Task run successfully, but doesn't really address the problem that we had in the first place - not having to re-download the dependencies every time this task runs. Because we provide an emptyDir implementation for the workspace, it always starts with an empty directory for the repository and has to re-download the dependencies. In order to solve our specific problem, we will need to dip just a tad deeper into the world of Kubernetes using a PersistentVolumeClaims (PVCs). 
+Now, this makes the `Task` run successfully, but doesn't really address the problem that we had in the first place - not having to re-download the dependencies every time this task runs. Because we provide an emptyDir implementation for the workspace, it always starts with an empty directory for the repository and has to re-download the dependencies. In order to solve our specific problem, we will need to dip just a tad deeper into the world of Kubernetes using a `PersistentVolumeClaim` (PVC). 
 
-In short, a PVC allows a pod in Kubernetes to request persistent storage from the container platform. For convenience, when this workshop was created a PVC named `maven-repo-pvc`. For those who are curious, below is what it looks like. In short, it requests OpenShift to allocate a 1GB filesystem, and many containers can read and write to it. 
+In short, a PVC allows a pod in Kubernetes to request persistent storage from the container platform. For convenience, when this workshop was created, **a PVC named `maven-repo-pvc` was created for you**. For those who are curious, below is what it looks like. In short, it requests OpenShift to allocate a 5GB filesystem, and your containers can read and write to it. 
 ```yaml
 kind: PersistentVolumeClaim
 apiVersion: v1
@@ -286,9 +297,9 @@ Waiting for logs to be available...
 ```
 In the second run, there are no downloads that need to happen, and the build completes in 333 ms compared with the 857 ms from the time without the workspace being populated and persistent. Almost a 3 times improvement in the build time, not bad !!! 
 
-As a side note, the command line parameters for specifying workspaces is a bit sparse, so here are a few useful options (cribbed from the [Workspaces test corpus on Github](https://github.com/tektoncd/cli/blob/master/pkg/workspaces/workspaces_test.go)):
+As a side note, the command line parameters for specifying workspaces are a bit sparse, so here are a few useful options (cribbed from the [Workspaces test corpus on Github](https://github.com/tektoncd/cli/blob/master/pkg/workspaces/workspaces_test.go)):
 - Each --workspace specification on the `tkn` command line needs to include a `name=foo` argument to specify what workspace is being bound
-- To specify an emptyDir, use either `emptyDir=''` , or possibly `emptyDir=Memory` options. There is more options here, but this works for testing purposes
+- To specify an emptyDir, use either `emptyDir=''` , or possibly `emptyDir=Memory` options. There are more options here, but this works for testing purposes
 - To specify an existing PersistentVolumeClaim, use the `claimName=my-claim-name` parameter
 - To specify a secret to back the workspace, you can use the `secret=foo-secret` parameter and reference the secret name. 
 
@@ -298,10 +309,11 @@ As a side note, the command line parameters for specifying workspaces is a bit s
 Now that we have figured out the details on how our refactored, parametrized, reusable task will work, we can now update our pipeline to use the task with its newest features. A few things to note:
 * Just like the task, the Pipeline declares the `workspaces` (by name) that it expects to be provided at runtime
 * The pipeline, in turn, passes the workspaces it has by name to the tasks that need a workspace
-* Note that we are using the `GOALS` param as the 'escape-hatch' for parameters that we want to pass to Maven. If we wanted to be a bit more intentional, we could certainly add a "MAVEN_OPTS" param to the task
+* Note that we are using the `GOALS` param as the 'escape-hatch' for parameters that we want to pass to Maven. If we wanted to be a bit more intentional, we could certainly add a `MAVEN_OPTS` param to the task
 
 
-```yaml
+```execute
+oc -n %username%-cicd apply -f - << EOF
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
@@ -333,7 +345,7 @@ spec:
       workspaces:
         - name: maven-repo
           workspace: local-maven-repo
-
+EOF
 ```
 
 With all that being done, we can now kick off the pipeline and see it do its work. You will observe that with the workspace we passed in, there is no unnecessary downloading of resources from Nexus, as they are already cached in the maven repository. 

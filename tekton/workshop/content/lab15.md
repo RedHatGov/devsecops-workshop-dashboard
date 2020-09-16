@@ -44,6 +44,7 @@ public void getUsersSortedByTask() {
     List<User> users = userResource.getUsers();
 ...
 ```
+> **Note:** If you've done this correctly, the syntax highlighting in your IDE should turn the line <span style='color:green'>green</span>. Alternatively, you can simply *delete* the `@Ignore` annotation.
 
 Next, click the **Source Control** Icon in the left-hand pane and enter a commit message, like `Uncomment unit test`:
 ![Commit Message](images/commit_message.png)
@@ -58,7 +59,7 @@ Git will ask for your credentials, so enter `%username%` and your openshift pass
 With our webhook in place, the git commit should trigger a new pipeline run. Now **this** is DevSecOps! Let's sit back and watch the logs as the pipeline does all the hard work.
 
 ```execute
-tkn pr logs $(tkn pr list --limit 1 -o jsonpath="{.items[0].metadata.name"}) -f
+tkn pr logs --last -f
 ```
 
 ## Onward
@@ -77,7 +78,7 @@ We need to uncomment lines 30-38, which you can do by manually deleting the two 
 
 ![Push Git Fix](images/push_git_fix.png)
 
-The git commit should trigger a fresh pipeline run. This time, we'll watch from the Web Console. Switch to the **Console** tab in your dashboard, and find **Pipeline Runs** under the **Pipelines** submenu in the left-hand pane. Select the first Pipeline Run in the list, and we'll cross our fingers while we await our fate.
+The git commit should trigger a fresh pipeline run. This time, we'll watch from the [Web Console](%console_url%/k8s/ns/%username%-cicd/tekton.dev~v1beta1~PipelineRun). Select the first Pipeline Run in the list, and we'll cross our fingers while we await our fate.
 
 ![Pipeline Start](images/pipeline_start.png)
 
@@ -89,7 +90,7 @@ The git commit should trigger a fresh pipeline run. This time, we'll watch from 
 
 <br>
 
-Now let's refresh the Sonarqube Report. Here's the [link](https://sonarqube-devsecops.%cluster_subdomain%/dashboard?id=%username%-openshift-tasks) the in case you closed it.
+Now let's refresh the Sonarqube Report. Here's the [link](https://sonarqube-devsecops.%cluster_subdomain%/dashboard?id=%username%-openshift-tasks) in case you closed it.
 
 
 ![8.5% Coverage](images/8.5_coverage.png)
