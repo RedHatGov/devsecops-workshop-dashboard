@@ -36,7 +36,7 @@ We'll make use of the `pipeline` `ServiceAccount` in the `%username%-cicd` proje
 Now your upper **Terminal** window is in a shell within the skopeo `Pod`'s container. First, we'll login to Quay. Enter your workshop password when prompted:
 
 ```execute
-skopeo login quayecosystem-quay.quay-enterprise.svc.cluster.local:443 --username=%username% --tls-verify=false --authfile /tmp/auth.json
+skopeo login quayecosystem-quay.quay-enterprise.svc.cluster.local:80 --username=%username% --tls-verify=false --authfile /tmp/auth.json
 ```
 
 Next, let's login to OpenShift's internal registry. Here, we use the `pipeline` `ServiceAccount`'s token to authenticate:
@@ -48,7 +48,7 @@ skopeo login image-registry.openshift-image-registry.svc.cluster.local:5000 --au
 Finally, let's run a `skopeo copy` to push our `tekton-tasks` image into Quay.
 
 ```execute
-skopeo copy docker://image-registry.openshift-image-registry.svc.cluster.local:5000/%username%-dev/tekton-tasks:latest docker://quayecosystem-quay.quay-enterprise.svc.cluster.local:443/%username%/tekton-tasks:quay1 --src-tls-verify=false --dest-tls-verify=false --authfile /tmp/auth.json
+skopeo copy docker://image-registry.openshift-image-registry.svc.cluster.local:5000/%username%-dev/tekton-tasks:latest docker://quayecosystem-quay.quay-enterprise.svc.cluster.local:80/%username%/tekton-tasks:quay1 --src-tls-verify=false --dest-tls-verify=false --authfile /tmp/auth.json
 
 ```
 
@@ -85,7 +85,7 @@ spec:
         - copy 
         - --debug
         - docker://image-registry.openshift-image-registry.svc.cluster.local:5000/%username%-dev/tekton-tasks:latest  
-        - docker://quayecosystem-quay.quay-enterprise.svc.cluster.local:443/%username%/tekton-tasks:quay
+        - docker://quayecosystem-quay.quay-enterprise.svc.cluster.local:80/%username%/tekton-tasks:quay
         - --src-tls-verify=false 
         - --dest-tls-verify=false
       command:
@@ -125,7 +125,7 @@ spec:
     args:
       - copy 
       - docker://image-registry.openshift-image-registry.svc.cluster.local:5000/\$(params.source_image)
-      - docker://quayecosystem-quay.quay-enterprise.svc.cluster.local:443/\$(params.target_image)
+      - docker://quayecosystem-quay.quay-enterprise.svc.cluster.local:80/\$(params.target_image)
       - --src-tls-verify=false 
       - --dest-tls-verify=false
     command:
