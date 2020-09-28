@@ -474,7 +474,7 @@ spec:
     args:
       - copy 
       - docker://image-registry.openshift-image-registry.svc.cluster.local:5000/$(params.source_image
-      - docker://quayecosystem-quay.quay-enterprise.svc.cluster.local:443/$(params.target_image)
+      - docker://quayecosystem-quay.quay-enterprise.svc.cluster.local:80/$(params.target_image)
       - --src-tls-verify=false 
       - --dest-tls-verify=false
     command:
