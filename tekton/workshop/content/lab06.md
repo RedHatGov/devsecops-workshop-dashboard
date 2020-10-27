@@ -57,7 +57,7 @@ Enter information like the following:
 So, now we have created a resource manually using the `tkn` CLI. We could have similarly created the Pipeline Resource using YAML, and provided it to the `oc` cli as native Kubernetes YAML. The YAML snippet below could be used to create the same `PipelineResource`. In fact, **go ahead and run this anyway**, to be sure you entered the correct options:
 
 ```execute
-oc -n user1-cicd apply -f - << EOF
+oc -n %username%-cicd apply -f - << EOF
 apiVersion: tekton.dev/v1alpha1
 kind: PipelineResource
 metadata:
