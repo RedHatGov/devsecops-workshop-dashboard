@@ -548,7 +548,7 @@ spec:
 
       echo "Uploading report.html to https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/%username%/report.html"
 
-      curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/reports/%username%/report.html
+      curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/%username%/report.html
 ```
 
 ## Various Resources

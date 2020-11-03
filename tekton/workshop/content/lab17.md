@@ -127,7 +127,7 @@ spec:
 
       echo "Uploading report.html to https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/%username%/report.html"
 
-      curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/reports/%username%/report.html
+      curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/%username%/report.html
 EOF
 ```
 
@@ -164,7 +164,7 @@ Result  fail
 ...
 ```
 
-Double check to make we've done this correctly by visiting the report's home in [Nexus](https://nexus-devsecops.%cluster_subdomain%/repository/reports/%username%/report.html).
+Double check to make we've done this correctly by visiting the report's home in [Nexus](https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/%username%/report.html).
 
 ![OpenSCAP Report](images/openscap_report.png)
 *Success!*
