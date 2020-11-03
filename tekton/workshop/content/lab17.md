@@ -35,7 +35,7 @@ spec:
 
       oscap-chroot "$MOUNT_POINT" xccdf eval --profile xccdf_org.ssgproject.content_profile_standard --report /tmp/report.html /usr/share/xml/scap/ssg/content/ssg-centos7-ds-1.2.xml
 
-      curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/test/%username%/report.html
+      curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/%username%/report.html
 EOF
 
 ```
@@ -67,7 +67,7 @@ oscap-chroot "$MOUNT_POINT" xccdf eval --profile xccdf_org.ssgproject.content_pr
 All that's left to do is present the scan result in a consumable format so that it can thoroughly evaluated by our system administrator. In addition to a summary streamed to `STDOUT`, `oscap-chroot` will populate a scan report for us in the `/tmp` directory thanks to the `--report "/tmp/report.html"` argument we pass to it. We'll publish this file to a [Raw Nexus Repository](https://help.sonatype.com/repomanager3/formats/raw-repositories) so that it can be viewed in a browser:
 
 ```bash
-curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/test/%username%/report.html
+curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/%username%/report.html
 ```
 
 Now let's actually create this `Task`. We'll use some of the techniques we've learned throughout this workshop to make it reusable in case we need to change the parameters we provide to `oscap-chroot` at some point:
@@ -125,7 +125,7 @@ spec:
 
       echo "********** END OF report.html ************" 
 
-      echo "Uploading report.html to https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/test/%username%/report.html"
+      echo "Uploading report.html to https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/%username%/report.html"
 
       curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/reports/%username%/report.html
 EOF

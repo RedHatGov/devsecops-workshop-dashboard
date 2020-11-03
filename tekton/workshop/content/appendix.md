@@ -494,6 +494,63 @@ spec:
     image: quay.io/skopeo/stable
 ```
 
+```yaml
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: oscap-image-scan
+spec:
+  params:
+  - name: xccdfProfile
+    description: The oscap xccdf profile to use when calling the oscap-chroot command
+    default: xccdf_org.ssgproject.content_profile_standard
+  - name: oscapProfilePath
+    description: The full path to the oscap content file
+    default: /usr/share/xml/scap/ssg/content/ssg-centos7-ds-1.2.xml
+  - name: container-imagetag
+    type: string
+    default: latest
+  - name: container-image-url
+    type: string
+    default: >-
+      image-registry.openshift-image-registry.svc.cluster.local:5000/%username%-cicd/tasks
+  steps:
+  - name: scan-image
+    securityContext:
+      privileged: true
+    image: quay.io/redhatgov/image-scanner:latest
+    script: >
+      #!/bin/sh
+
+      echo "Pulling image \$(params.container-image-url)" 
+
+      buildah from --tls-verify=false --storage-driver vfs "docker://\$(params.container-image-url):\$(params.container-imagetag)" 
+
+      container_id=\$(buildah --storage-driver vfs containers -q) 
+
+      echo "Container ID: \$container_id" 
+
+      echo "Mounting the container..." 
+
+      mount_point=\$(buildah mount --storage-driver vfs \$container_id | cut -d' ' -f2) 
+
+      echo "Running oscap-chroot scan" 
+
+      oscap-chroot "\$mount_point" xccdf eval --profile "\$(params.xccdfProfile)" --report /tmp/report.html "\$(params.oscapProfilePath)"
+
+      echo "Displaying contents of /tmp/report.html"
+
+      echo "********** START OF report.html **********" 
+
+      cat /tmp/report.html 
+
+      echo "********** END OF report.html ************" 
+
+      echo "Uploading report.html to https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/%username%/report.html"
+
+      curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/reports/%username%/report.html
+```
+
 ## Various Resources
 
 ```yaml
