@@ -20,7 +20,7 @@ We'll start by running a container that has been pre-built with an installation 
 
 Now, the filesystem we're interested in scanning is, of course, that of our application container. In order to mount that filesystem in our development pod, we're going to use [Buildah](https://buildah.io/), a tool used for building and manipulating container images. The cool thing about using **Buildah** for this purpose is that while building a `Dockerfile` is supported, it doesn't *require* one, nor does it require a **daemon** or **root privileges**. 
 
-Let's login to the OpenShift Interal Registry so that we can pull down the `tasks` image:
+Let's login to the OpenShift Internal Registry so that we can pull down the `tasks` image:
 
 ```execute
 buildah login --authfile=/tmp/auth.json --tls-verify=false --username=user1 --password=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) image-registry.openshift-image-registry.svc.cluster.local:5000
