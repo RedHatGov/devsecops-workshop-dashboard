@@ -173,27 +173,25 @@ Double check to make we've done this correctly by visiting the report's home in 
 Now we're ready to incorporate our final task into the pipeline. We'll run this in parallel with our vulnerability scan.
 
 ```execute
-DEPLOY_TO_DEV=$(oc get pipelines tasks-dev-pipeline -o yaml | yq r --collect - 'spec.tasks[7]') && TASKS="$(oc get pipelines tasks-dev-pipeline -o yaml | yq r - 'spec.tasks' | yq d - '[7]')" && cat << EOF | yq p - 'spec.tasks' > patch.yaml
+TASKS="$(oc get pipelines tasks-dev-pipeline -o yaml | yq r - 'spec.tasks' | yq p - 'spec.tasks')" && oc patch pipelines tasks-dev-pipeline --type=merge -p "$(cat << EOF
 $TASKS
-- name: oscap-image-scan
-  taskRef:
-    kind: Task
-    name: oscap-image-scan
-  params:
-  - name: xccdfProfile
-    value: xccdf_org.ssgproject.content_profile_standard
-  - name: oscapProfilePath
-    value: /usr/share/xml/scap/ssg/content/ssg-centos7-ds-1.2.xml
-  - name: container-imagetag
-    value: latest
-  - name: container-image-url
-    value: image-registry.openshift-image-registry.svc.cluster.local:5000/%username%-cicd/tasks
-  runAfter:
-  - create-image
-$DEPLOY_TO_DEV
+    - name: oscap-image-scan
+      taskRef:
+        kind: Task
+        name: oscap-image-scan
+      params:
+        - name: xccdfProfile
+          value: xccdf_org.ssgproject.content_profile_standard
+        - name: oscapProfilePath
+          value: /usr/share/xml/scap/ssg/content/ssg-centos7-ds-1.2.xml
+        - name: container-imagetag
+          value: latest
+        - name: container-image-url
+          value: image-registry.openshift-image-registry.svc.cluster.local:5000/%username%-cicd/tasks
+      runAfter:
+        - create-image
 EOF
-oc patch pipelines tasks-dev-pipeline --type=merge -p "$(cat patch.yaml)"
-rm patch.yaml
+)"
 ```
 
 Our pipeline is now complete! Let's kick it off one last time:
