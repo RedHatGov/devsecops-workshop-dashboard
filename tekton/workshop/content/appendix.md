@@ -1,9 +1,5 @@
-# Introduction
-
-This lab provides an overview/reference of all the resources that we've created so far
-
-# Tekton Resources
-
+# Cheat Codes
+Refer to the resources below if your pipeline is broken, and you need help to returning to a stable state :)
 
 ## Pipelines
 ```yaml
@@ -144,6 +140,22 @@ spec:
             value: %username%-dev/tekton-tasks:$(tasks.git-rev.results.gitsha)
           - name: target_image
             value: %username%/tekton-tasks:$(tasks.git-rev.results.gitsha)
+      runAfter:
+          - create-image
+
+    - name: oscap-image-scan
+      taskRef:
+        kind: Task
+        name: oscap-image-scan
+      params:
+          - name: xccdfProfile
+            value: xccdf_org.ssgproject.content_profile_standard
+          - name: oscapProfilePath
+            value: /usr/share/xml/scap/ssg/content/ssg-centos7-ds-1.2.xml
+          - name: container-imagetag
+            value: latest
+          - name: container-image-url
+            value: image-registry.openshift-image-registry.svc.cluster.local:5000/%username%-cicd/tasks
       runAfter:
           - create-image
 

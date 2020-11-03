@@ -36,8 +36,7 @@ modules:
     name: Lab 16 - Clair Vulnerability Scan
   lab17:
     name: Lab 17 - OpenSCAP Scan
-  lab18:
-    name: Lab 18 - Summary / Reference
   Fin:
     name: Fin
-
+  appendix:
+    name: Appendix
