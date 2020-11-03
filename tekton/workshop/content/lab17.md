@@ -23,13 +23,13 @@ Now, the filesystem we're interested in scanning is, of course, that of our appl
 Let's login to the OpenShift Internal Registry so that we can pull down the `tasks` image:
 
 ```execute
-buildah login --authfile=/tmp/auth.json --tls-verify=false --username=user1 --password=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) image-registry.openshift-image-registry.svc.cluster.local:5000
+buildah login --authfile=/tmp/auth.json --tls-verify=false --username=%username% --password=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) image-registry.openshift-image-registry.svc.cluster.local:5000
 ```
 
 Next, we'll use `buildah from` to create a **working container** from our application image. We'll store this container's ID in the `CONTAINER_ID` environment variable using `buildah containers`.
 
 ```execute
-buildah from --authfile=/tmp/auth.json --tls-verify=false --storage-driver vfs "docker://image-registry.openshift-image-registry.svc.cluster.local:5000/user1-cicd/tasks:latest"
+buildah from --authfile=/tmp/auth.json --tls-verify=false --storage-driver vfs "docker://image-registry.openshift-image-registry.svc.cluster.local:5000/%username%-cicd/tasks:latest"
 
 CONTAINER_ID=`buildah --storage-driver vfs containers -q`
 echo $CONTAINER_ID
@@ -72,10 +72,10 @@ Result  fail
 All that's left to do is present the scan result in a consumable format so that it can thoroughly evaluated by our system administrator. In addition to the information streamed to `STDOUT`, `oscap-chroot` populated a scan report for us in the `/tmp` directory thanks to the `--report "/tmp/report.html"` argument we passed to it. Let's publish this file to a [Raw Nexus Repository](https://help.sonatype.com/repomanager3/formats/raw-repositories) so that it can be viewed in a browser:
 
 ```execute
-curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/test/user1/report.html
+curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/test/%username%/report.html
 ```
 
-Double check to make sure you've done this correctly by visiting the report's new home in [Nexus](https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/test/user1/report.html).
+Double check to make sure you've done this correctly by visiting the report's new home in [Nexus](https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/test/%username%/report.html).
 
 ![OpenSCAP Report](images/openscap_report.png)
 *Success!* This is starting to feel too easy. If you haven't already, go ahead and exit your development container:
@@ -88,12 +88,12 @@ exit
 Let's put our discovery to work by wrapping it in a `Task`. We'll use some of the techniques we've learned throughout this workshop to make it reusable in case we need to change the parameters we provide to `oscap-chroot` at some point:
 
 ```execute
-oc apply -n user1-cicd -f - << EOF
+oc apply -n %username%-cicd -f - << EOF
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: oscap-image-scan
-  namespace: user1-cicd
+  namespace: %username%-cicd
 spec:
   params:
   - name: xccdfProfile
@@ -108,7 +108,7 @@ spec:
   - name: container-image-url
     type: string
     default: >-
-      image-registry.openshift-image-registry.svc.cluster.local:5000/user1-cicd/tasks
+      image-registry.openshift-image-registry.svc.cluster.local:5000/%username%-cicd/tasks
   steps:
   - name: scan-image
     securityContext:
@@ -143,8 +143,8 @@ spec:
 
       echo "********** END OF report.html ************" 
 
-      echo "Uploading report.html to https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/test/user1/report.html"
+      echo "Uploading report.html to https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/test/%username%/report.html"
 
-      curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/test/user1/report.html
+      curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/test/%username%/report.html
 EOF
 
