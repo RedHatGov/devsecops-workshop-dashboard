@@ -36,15 +36,14 @@ spec:
       oscap-chroot "$MOUNT_POINT" xccdf eval --profile xccdf_org.ssgproject.content_profile_standard --report /tmp/report.html /usr/share/xml/scap/ssg/content/ssg-centos7-ds-1.2.xml
 
       curl -k --user 'deployment:deployment123' --upload-file /tmp/report.html https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/%username%/report.html
-EOF
 
 ```
 
 The first thing to note is that we're leveraging `quay.io/redhatgov/image-scanner`, a container that has been pre-built with an installation `oscap-chroot`, a CLI for executing OpenSCAP scans against local filesystems.
 
-Now, the filesystem we're interested in scanning is, of course, that of our application container. In order to mount that filesystem in our development pod, we're going to use [Buildah](https://buildah.io/), a tool used for building and manipulating container images. The cool thing about using **Buildah** for this purpose is that while building a `Dockerfile` is supported, it doesn't *require* one, nor does it require a **daemon** or **root privileges** (when run from a host). 
+Now, the filesystem we're interested in scanning is, of course, that of our application container. In order to mount that filesystem in our Tekton `Pod`, we're going to use [Buildah](https://buildah.io/), a tool used for building and manipulating container images. The cool thing about using **Buildah** for this purpose is that while building a `Dockerfile` is supported, it doesn't *require* one, nor does it require a **daemon** or **root privileges** on a host. 
 
-We use `buildah from` to create a **working container** from our application image. We store this container's ID in the `CONTAINER_ID` environment variable using `buildah containers`.
+We use `buildah from` to create a **working container** from our application image, storing this container's ID in the `CONTAINER_ID` environment variable with `buildah containers`.
 
 ```bash
 buildah from --authfile=/tmp/auth.json --tls-verify=false --storage-driver vfs "docker://image-registry.openshift-image-registry.svc.cluster.local:5000/%username%-cicd/tasks:latest"
