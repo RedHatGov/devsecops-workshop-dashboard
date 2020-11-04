@@ -344,6 +344,8 @@ spec:
 
         echo "Setting manual triggers on deployment $(params.app_name)"
 
+        oc set triggers dc/$(params.app_name) --remove-all -n  $(params.dev_project) 
+
         oc set triggers dc/$(params.app_name) --manual=true -n  $(params.dev_project) 
 
         if ! oc get route/$(params.app_name) -n $(params.dev_project) ; then
@@ -352,7 +354,7 @@ spec:
 
         fi
           
-        oc rollout latest dc/$(params.app_name) -n  $(params.dev_project)
+        oc rollout latest dc/$(params.app_name) -n  $(params.dev_project) || true
     - name: announce-success
       image: 'gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:latest'      
       script: >
@@ -486,7 +488,7 @@ spec:
     args:
       - copy 
       - docker://image-registry.openshift-image-registry.svc.cluster.local:5000/$(params.source_image
-      - docker://quayecosystem-quay.devsecops.svc.cluster.local:80/$(params.target_image)
+      - docker://quay.%cluster_subdomain%/$(params.target_image)
       - --src-tls-verify=false 
       - --dest-tls-verify=false
     command:

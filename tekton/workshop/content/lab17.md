@@ -163,10 +163,10 @@ Result  fail
 ...
 ```
 
-Double check to make we've done this correctly by visiting the report's home in [Nexus](https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/%username%/report.html).
+When the task finishes, double check to make we've done this correctly by visiting the report's home in [Nexus](https://nexus-devsecops.%cluster_subdomain%/repository/oscap-reports/%username%/report.html).
 
 ![OpenSCAP Report](images/openscap_report.png)
-*Success!*
+*Success!* Feel free to poke around here to get a sense for the types of findings OpenSCAP reports on.
 
 # Add the OpenSCAP Task to the Pipeline
 Now we're ready to incorporate our final task into the pipeline. We'll run this in parallel with our vulnerability scan.
@@ -197,6 +197,8 @@ Our pipeline is now complete! Let's kick it off one last time:
 ```execute
 tkn pipeline start --resource pipeline-source=tasks-source-code --workspace name=local-maven-repo,claimName=maven-repo-pvc tasks-dev-pipeline --showlog
 ```
+
+![Final Pipeline](images/final_pipeline.png)
 
 # Conclusion
 

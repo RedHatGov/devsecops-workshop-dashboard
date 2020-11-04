@@ -56,7 +56,8 @@ tkn  clustertask describe openshift-client
 ```
 
 The details of the `ClusterTask` look something similar to the output below:
-```
+
+```bash
 Name:   openshift-client
 
 📨 Input Resources
@@ -141,7 +142,7 @@ With these three steps, we can see the following in the OpenShift Console:
 
 ## Create a Task to create the container image
 
-Now that we know the exact commands that we need in our Pipeline, let's add an extra task to make that happen. Because we want to be able to experiment with this Task until we get it right, we will put the commands in a separate Task and run it until we get it right ( and we will parametrize the task out of the box so that we can easily work with it from the pipeline). 
+Now that we know the exact commands that we need in our Pipeline, let's add an extra task to make that happen. Because we want to be able to experiment with this Task until we get it right, we will put the commands in a separate Task and run it until we get it right ( and we will parameterize the task out of the box so that we can easily work with it from the pipeline). 
 
 A few things to note:
 * The task uses the `quay.io/openshift/origin-cli:latest` container image to execute the commands. If we only had to run a command-or-two for this stage, we could have used the existing `ClusterTask`, but because we also have to do some checking and clean-up (to make the task run repeatable), we will just lean on the same container image that the `ClusterTask` uses.

@@ -201,7 +201,7 @@ spec:
 
         echo "Setting manual triggers on deployment \$(params.app_name)"
 
-        oc set triggers dc/\$(params.app_name) --remove-all
+        oc set triggers dc/\$(params.app_name) --remove-all -n  \$(params.dev_project)
 
         oc set triggers dc/\$(params.app_name) --manual=true -n  \$(params.dev_project)
 
@@ -211,7 +211,7 @@ spec:
 
         fi
           
-        oc rollout latest dc/\$(params.app_name) -n  \$(params.dev_project)
+        oc rollout latest dc/\$(params.app_name) -n  \$(params.dev_project) || true
     - name: announce-success
       image: 'gcr.io/tekton-releases/github.com/tektoncd/pipeline/cmd/git-init:latest'      
       script: >

@@ -85,7 +85,7 @@ spec:
         - copy 
         - --debug
         - docker://image-registry.openshift-image-registry.svc.cluster.local:5000/%username%-dev/tekton-tasks:latest  
-        - docker://quayecosystem-quay.devsecops.svc.cluster.local:80/%username%/tekton-tasks:quay
+        - docker://quay.%cluster_subdomain%/%username%/tekton-tasks:quay
         - --src-tls-verify=false 
         - --dest-tls-verify=false
       command:
@@ -99,7 +99,7 @@ Now, if we navigate to the [Quay Repository](https://quay.%cluster_subdomain%/re
 
 ![Clair Vulns Details](images/quay_vulns_details.png)
 
-Once we see this TaskRun completing successfully, we can migrate the Task spec to a standalone task and parametrize it as needed. Below are the resources at hand. A few notable items:
+Once we see this TaskRun completing successfully, we can migrate the Task spec to a standalone task and parameterize it as needed. Below are the resources at hand. A few notable items:
 * We could create explicit PipelineResources for the source and target images (in quay and the internal registry); however, we would need to create a new one for each Revision, which doesn't make a lot of sense.  
 
 ```execute
@@ -125,7 +125,7 @@ spec:
     args:
       - copy 
       - docker://image-registry.openshift-image-registry.svc.cluster.local:5000/\$(params.source_image)
-      - docker://quayecosystem-quay.devsecops.svc.cluster.local:80/\$(params.target_image)
+      - docker://quay.%cluster_subdomain%/\$(params.target_image)
       - --src-tls-verify=false 
       - --dest-tls-verify=false
     command:
