@@ -85,7 +85,7 @@ spec:
         - copy 
         - --debug
         - docker://image-registry.openshift-image-registry.svc.cluster.local:5000/%username%-dev/tekton-tasks:latest  
-        - docker://quayecosystem-quay.devsecops.svc.cluster.local:80/%username%/tekton-tasks:quay
+        - docker://quay.%cluster_subdomain%/%username%/tekton-tasks:quay
         - --src-tls-verify=false 
         - --dest-tls-verify=false
       command:
@@ -99,7 +99,7 @@ Now, if we navigate to the [Quay Repository](https://quay.%cluster_subdomain%/re
 
 ![Clair Vulns Details](images/quay_vulns_details.png)
 
-Once we see this TaskRun completing successfully, we can migrate the Task spec to a standalone task and parametrize it as needed. Below are the resources at hand. A few notable items:
+Once we see this TaskRun completing successfully, we can migrate the Task spec to a standalone task and parameterize it as needed. Below are the resources at hand. A few notable items:
 * We could create explicit PipelineResources for the source and target images (in quay and the internal registry); however, we would need to create a new one for each Revision, which doesn't make a lot of sense.  
 
 ```execute
@@ -125,7 +125,7 @@ spec:
     args:
       - copy 
       - docker://image-registry.openshift-image-registry.svc.cluster.local:5000/\$(params.source_image)
-      - docker://quayecosystem-quay.devsecops.svc.cluster.local:80/\$(params.target_image)
+      - docker://quay.%cluster_subdomain%/\$(params.target_image)
       - --src-tls-verify=false 
       - --dest-tls-verify=false
     command:
@@ -144,26 +144,24 @@ We can see the `TaskRun` succeed - we're in business!
 
 # Add Clair Container Scan to Pipeline
 
-We can now update our Pipeline to include the `Clair Container Vulnerability Scan` step, right after the `create-image` stage.  Also, note that the `runAfter` attribute of the `deploy-to-dev` task needs to be updated to follow the `container-vulnerability-scan` task invocation. 
+We can now update our Pipeline to include the `Clair Container Vulnerability Scan` step, right after the `create-image` stage.  We'll run this in parallel with the `deploy-to-dev` task since this stage doesn't depend on the results of the scan.
 
 ```execute
-DEPLOY_TO_DEV=$(oc get pipelines tasks-dev-pipeline -o yaml | yq r --collect - 'spec.tasks[6]' | yq w - '[0].runAfter[0]' 'container-vulnerability-scan') && TASKS="$(oc get pipelines tasks-dev-pipeline -o yaml | yq r - 'spec.tasks' | yq d - '[6]')" && cat << EOF | yq p - 'spec.tasks' > patch.yaml
+TASKS="$(oc get pipelines tasks-dev-pipeline -o yaml | yq r - 'spec.tasks' | yq p - 'spec.tasks')" && oc patch pipelines tasks-dev-pipeline --type=merge -p "$(cat << EOF
 $TASKS
-- name: container-vulnerability-scan
-  taskRef:
-    kind: Task
-    name: send-to-quay
-  params:
-      - name: source_image
-        value: %username%-dev/tekton-tasks:\$(tasks.git-rev.results.gitsha)
-      - name: target_image
-        value: %username%/tekton-tasks:\$(tasks.git-rev.results.gitsha)
-  runAfter:
-      - create-image
-$DEPLOY_TO_DEV
+    - name: container-vulnerability-scan
+      taskRef:
+        kind: Task
+        name: send-to-quay
+      params:
+          - name: source_image
+            value: %username%-dev/tekton-tasks:\$(tasks.git-rev.results.gitsha)
+          - name: target_image
+            value: %username%/tekton-tasks:\$(tasks.git-rev.results.gitsha)
+      runAfter:
+          - create-image
 EOF
-oc patch pipelines tasks-dev-pipeline --type=merge -p "$(cat patch.yaml)"
-rm patch.yaml
+)"
 ```
 
 We can re-start the `tasks-dev-pipeline` pipeline and see it go through completion: 

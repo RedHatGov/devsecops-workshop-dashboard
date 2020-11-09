@@ -104,7 +104,7 @@ tkn task start --inputresource source=tasks-source-code  --showlog --param GOALS
 
 As is always the case, it is always a balance of making a software component reusable and customizable vs making it simple to use. From a technical POV, if we wanted to add additional arguments to Maven, we could always add them to the GOALS parameter, but that just feels wrong. 
 
-First off, our current maven task assumes that the `pom.xml` is at the root of the source tree in the `source` PipelineResource. While that is a reasonable assumption for our specific project, different maven projects might use a different location for the project. This is the first value we want to parametrize. 
+First off, our current maven task assumes that the `pom.xml` is at the root of the source tree in the `source` PipelineResource. While that is a reasonable assumption for our specific project, different maven projects might use a different location for the project. This is the first value we want to parameterize. 
 
 If we inspect the Tasks application source repository, we will see that the source code repository has a `configuration/cicd-settings.xml` file containing some profiles, and repository settings. We want to be able to allow the passing of that value path as a parameter. 
 
@@ -306,7 +306,7 @@ As a side note, the command line parameters for specifying workspaces are a bit 
 
 # Update Tekton pipeline
 
-Now that we have figured out the details on how our refactored, parametrized, reusable task will work, we can now update our pipeline to use the task with its newest features. A few things to note:
+Now that we have figured out the details on how our refactored, parameterized, reusable task will work, we can now update our pipeline to use the task with its newest features. A few things to note:
 * Just like the task, the Pipeline declares the `workspaces` (by name) that it expects to be provided at runtime
 * The pipeline, in turn, passes the workspaces it has by name to the tasks that need a workspace
 * Note that we are using the `GOALS` param as the 'escape-hatch' for parameters that we want to pass to Maven. If we wanted to be a bit more intentional, we could certainly add a `MAVEN_OPTS` param to the task

@@ -35,9 +35,8 @@ modules:
   lab16:
     name: Lab 16 - Clair Vulnerability Scan
   lab17:
-    name: Lab 17 - OpenSCAP DISA STIG Scan
-  lab18:
-    name: Lab 18 - Summary / Reference
+    name: Lab 17 - OpenSCAP Scan
   Fin:
     name: Fin
-
+  appendix:
+    name: Appendix
