@@ -7,7 +7,7 @@ In this lab, we will explore approaches to triggering the Trusted Software Suppl
 At first glance (if you start reading the [Tekton Triggers Documentation](https://github.com/tektoncd/triggers/tree/master/docs)) it does sounds a bit complicated as the approach is very flexible and has many options. 
 
 However, if we want to create a simple webhook, at the simplest level we need the following: 
-* Something that has a template to create the Tekton objects we want. In our case, we would want the webhook to kick off our pipelines, so we will need a template for a PipelineRun (based on our prior executions of our pipelines). In the land of Tekton, the `TriggerTemplate` provides that capability, together with some parametrization abilities
+* Something that has a template to create the Tekton objects we want. In our case, we would want the webhook to kick off our pipelines, so we will need a template for a PipelineRun (based on our prior executions of our pipelines). In the land of Tekton, the `TriggerTemplate` provides that capability, together with some parameterization abilities
 * When a request comes in, we need something to extract the data from the incoming request (headers, body, etc) and map it to the parameters of our `TriggerTemplate`
 * Something to listen to a URL/route that is accessible to the system that will trigger the webhook. For that, we will use an `EventListener`, which combines the maps the `TriggerBinding` and `TriggerTemplate` for each event that we want to handle. Once Tekton stands up the pod and the service, we will expose the route using the `oc` CLI. 
 
