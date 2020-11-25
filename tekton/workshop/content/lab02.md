@@ -1,6 +1,6 @@
 The notion of Trusted Software Supply Chain is that of applying an assembly line approach to software that includes building increasing levels of assurance before marking an artifact as ready to deploy to production.
 
-In this workshop, you will use build orchestration tools such as Jenkins, Kubernetes, and OpenShift to support implementing and integrating [continuous delivery (CD)][1] as the foundation of automating the various stages of the deployment lifecycle are represented – from development, multiple types of testing, user acceptance, staging, to production release.
+In this workshop, you will use build orchestration tools such as Tekton, Kubernetes, and OpenShift to support implementing and integrating [continuous delivery (CD)][1] as the foundation of automating the various stages of the deployment lifecycle are represented – from development, multiple types of testing, user acceptance, staging, to production release.
 
 ![Trusted Software Supply Chain](images/trusted_software_supply_chain.png)
 
