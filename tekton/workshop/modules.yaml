@@ -15,7 +15,7 @@ modules:
   lab06:
     name: Lab 06 - Tekton Exploration
   lab07:
-    name: Lab 07 - Tasks Parametrization, Build Stage
+    name: Lab 07 - Tasks Parameterization, Build Stage
   lab08:
     name: Lab 08 - Unit Test Stage
   lab09:
