@@ -25,7 +25,7 @@ oc new-project devsecops
 # Delete limit range, if created by a project template
 oc delete limitrange --all -n devsecops
 ```
-4. In the OpenShift Web Console, navigate to **Operators -> OperatorHub** and search for "TSSC Operator" in the **devsecops** project. Select it and click **Install**
+4. In the OpenShift Web Console, navigate to **Operators -> OperatorHub** and search for "DevSecOps Operator" in the **devsecops** project. Select it and click **Install**
 5. Set **Installation Mode** to *A specific namespace on the cluster* and set **Installed Namespace** to *devsecops*.
 6. Leave other options as default and click **Install** once more.
 7. Create a `.dockerconfigjson` secret containing a pull token for registry.redhat.io. *If you're using an RHPDS-provisioned cluster, you can skip this step, since this secret is created as part of the default provisioning template.* 
@@ -49,7 +49,7 @@ It is recommended to generate a new service account before a workshop and delete
       type: kubernetes.io/dockerconfigjson
     EOF
   ```
-8. On the TSSC Operator page, create a new `DevSecOpsWorkshop` CustomResource, setting the value of **Devsecopsworkshop -> Workshop Users -> numberOfUsers** as appropriate. 
+8. On the DevSecOps Operator page, create a new `DevSecOpsWorkshop` CustomResource, setting the value of **Devsecopsworkshop -> Workshop Users -> numberOfUsers** as appropriate. 
 9. If you modified the namespace or name of your pull secret in Step 7, provide the corresponding values for **Devsecopsworkshop -> Pull Secret** as needed. Otherwise, you can leave this blank.
 
 ## Running the workshop
