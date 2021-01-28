@@ -95,6 +95,6 @@ oc get ClusterTask openshift-client -o yaml
 
 ```
 
-You have the ability to take any container into a task into your pipeline, make it reusable with parameters, and plug it into your pipelines. If one of the ClusterTasks doesn't quite quite work the way you like, you can just copy it into a task in your own project and change it to your liking.
+You have the ability to take any container into a task into your pipeline, make it reusable with parameters, and plug it into your pipelines. If one of the ClusterTasks doesn't quite work the way you like, you can just copy it into a task in your own project and change it to your liking.
 
 [1]: https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html
