@@ -43,7 +43,7 @@ It is recommended to generate a new service account before a workshop and delete
       apiVersion: v1
       metadata:
         name: pull-secret
-        namespace: openshift-config
+        namespace: devsecops
       data:
         .dockerconfigjson: $SECRET
       type: kubernetes.io/dockerconfigjson
