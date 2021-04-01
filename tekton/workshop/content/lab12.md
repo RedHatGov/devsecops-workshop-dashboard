@@ -14,7 +14,7 @@ In the bigger scheme of things, so far, our application has passed the first few
 
 The easiest way to deploy an application is using the Developer Console in OpenShift. Now that we have the application image in the internal registry, the deployment process is a snap !
 
-* Switch to the Developer console (from the upper-left corner navigation) and click the "+Add" button and choose the "Container Image" tile
+* Switch to the Developer console (from the upper-left corner navigation), double-check the project you have selected in the pulldown (it should be "%username%-dev" and not "devsecops"), and click the "+Add" button and choose the "Container Image" tile
 ![Developer Console Add](images/developer_console_add.png)
 
 * Choose the "Image Stream tag from internal registry" and choose the "%username%-dev" project in the Projects dropdown, then choose the `tekton-tasks` in the ImageStreams (which is pre-populated because we created that image stream in the previous stage) and the `latest` tag from the Tag dropdown. Leave the default and hit the `Create` button
