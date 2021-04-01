@@ -52,15 +52,11 @@ public void getUsersSortedByTask() {
 
 > **Note:** If you've done this correctly, the syntax highlighting in your IDE should turn the line <span style='color:green'>green</span>. Alternatively, you can simply *delete* the `@Ignore` annotation.
 
-Next, click the **Source Control** Icon in the left-hand pane and enter a commit message, like `Uncomment unit test`:
-![Commit Message](images/commit_message.png)
+Next, use they keyboard combination **Ctrl+Shift+P** to open the CodeReady Workspaces function search box, and enter `Git: Commit` to bring up the commit interface. The editor might present a dialogue box offering to Stage them first; click Always for this exercise, but in real life pick whatever matches your workflow. When prompted for a commit message, enter something descriptive like `Unignored unit test for sorted users` and press enter.
 
-Click the check mark above the text box to commit your changes. The editor should present a dialogue box offering to Stage them first; click **Always**.
+Next, we need to push the commit from your workspace back up to the git repository. Use **Ctrl+Shift+P** to open the function search box again, and enter `Git: Push`.
 
-Next, we need to push the commit from your workspace back up to the git repository. Click the three dots above the commit message text box, and select **Push** from the context menu:
-![Git Push](images/git_push.png)
-
-Git will ask for your credentials, so enter `%username%` and your openshift password (e.g. `openshift`) when prompted.
+Git will ask for your credentials, so enter `%username%` and your OpenShift password (e.g. `openshift`) when prompted.
 
 With our webhook in place, the git commit should trigger a new pipeline run. Now **this** is DevSecOps! Let's sit back and watch the logs as the pipeline does all the hard work.
 
