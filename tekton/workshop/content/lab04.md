@@ -9,7 +9,7 @@ OpenShift Pipelines is supported in OpenShift using an operator. When the operat
 
 Ensure that the `devsecops` project is selected in the "Project" drop-down and change from the "Administrator" view to the "Developer" view. These views are based on persona, and you can provide both or either to specific accounts, with varying levels of control.
 
-Identify the `gitea-server` deployment in the Topology view and click in the center of the icon. On the right-hand side pane, click the [gitea-server Route](https://gitea-server-devsecops.%cluster_subdomain%/%username%)) to open it in a new tab. To log into the gitea server, click the `Sign-In` button and use `%username%`  and password provided at the Dashboard login.
+Identify the `gitea-server` deployment in the Topology view and click in the center of the icon. On the right-hand side pane, click the [gitea-server Route](https://gitea-server-devsecops.%cluster_subdomain%/%username%) to open it in a new tab. To log into the gitea server, click the `Sign-In` button and use `%username%`  and password provided at the Dashboard login.
 
 ![Gitea Route](images/gitea_route_developer.png)
 
