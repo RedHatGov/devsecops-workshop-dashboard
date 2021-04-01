@@ -46,12 +46,12 @@ oc delete route tekton-tasks -n %username%-dev
 
 Then, if we wanted to deploy a new instance of the application based on the image we wanted, we can run:
 
-```execute
+```shell
 oc new-app --image-stream=tekton-tasks:latest -n %username%-dev
 oc expose svc tekton-tasks -n %username%-dev
 ```
 
-Re-running the commands above re-deploys the application and it's back to running.
+Re-running the commands above re-deploys the application and it's back to running - but we don't want that to happen right now. We want it cleaned up, so don't try rerunning that!
 
 ### Create deploy-image Task
 
