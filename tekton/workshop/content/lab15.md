@@ -76,7 +76,7 @@ Happily, the fix has already been written; it's just been commented out. In your
 
 *If you're having trouble with the shortcut, you can expand the file explorer to* `openshift-tasks/src/main/java/org/jboss/as/quickstarts/tasksrs/service/UserResource.java`.
 
-We need to uncomment lines 30-38, which you can do by manually deleting the two forward slashes at the beginning of each line, *or* by highlighting the relevant lines and pressing **Ctrl+/**  - that's a forward slash - (or **Cmd+/** on a Mac). Then we need to commit our changes once more, using a message like `Uncomment user sort`. Once committed, we need to Push again, entering our username and password when prompted.
+We need to uncomment lines 32-38, which you can do by manually deleting the two forward slashes at the beginning of each line, *or* by highlighting the relevant lines and pressing **Ctrl+/**  - that's a forward slash - (or **Cmd+/** on a Mac). Then we need to commit our changes once more, using a message like `Uncomment user sort`. Once committed, we need to Push again, entering our username and password when prompted.
 
 ![Push Git Fix](images/push_git_fix.png)
 
