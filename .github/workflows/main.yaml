@@ -1,0 +1,40 @@
+name: Rebuild Workshop Dashboard
+
+on:
+  schedule:
+    - cron: '0 2 * * *' # everyday at 2am
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        style:
+        - tekton
+        - jenkins
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build only
+        run: hack/build.sh -l local -t ${{ matrix.style }} -- --build-arg=PIPELINE_STYLE=${{ matrix.style }}
+        if: github.ref != 'refs/heads/develop'
+
+      - name: Build and push
+        run: hack/build.sh -l quay -t ${{ matrix.style }} -- --build-arg=PIPELINE_STYLE=${{ matrix.style }}
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        if: github.ref == 'refs/heads/develop'
