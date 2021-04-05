@@ -9,7 +9,7 @@ OpenShift Pipelines is supported in OpenShift using an operator. When the operat
 
 Ensure that the `devsecops` project is selected in the "Project" drop-down and change from the "Administrator" view to the "Developer" view. These views are based on persona, and you can provide both or either to specific accounts, with varying levels of control.
 
-Identify the `gitea-server` deployment in the Topology view and click in the center of the icon. On the right-hand side pane, click the [gitea-server Route]  (https://gitea-server-devsecops.%cluster_subdomain%/%username%)) to open it in a new tab. To log into the gitea server, click the `Sign-In` button and use `%username%`  and password provided at the Dashboard login.
+Identify the `gitea-server` deployment in the Topology view and click in the center of the icon. On the right-hand side pane, click the [gitea-server Route](https://gitea-server-devsecops.%cluster_subdomain%/%username%) to open it in a new tab. To log into the gitea server, click the `Sign-In` button and use `%username%`  and password provided at the Dashboard login.
 
 ![Gitea Route](images/gitea_route_developer.png)
 
@@ -23,7 +23,7 @@ Maven install will run through the [Maven lifecycle][1] and skip the tests.  We 
 
 - validate - validate the project is correct and all necessary information is available
 - compile - compile the source code of the project
-- test - test the compiled source code using a suitable unit testing framework. These tests should not require the code be packaged or deployed
+- test - test the compiled source code using a suitable unit testing framework (these tests should not require the code be packaged or deployed)
 - package - take the compiled code and package it in its distributable format, such as a JAR.
 - verify - run any checks on results of integration tests to ensure quality criteria are met
 - install - install the package into the local repository, for use as a dependency in other projects locally
@@ -35,11 +35,11 @@ Go into your CI/CD project and review the pipelines that the workshop has pre-pr
 
 ![Pipelinerun Example](images/pipeline_example.png)
 
-Now, navigate to the Pipeline Runs section and observe the results of the execution of the existing pipeline
+Now, navigate to the Pipeline Runs section and observe the results of the execution of the existing pipeline. It may have failed, as these pipelines were kicked off while the cluster was building itself out. You can manually rerun here from the menu on the top right if you want to observe logs of the run.
 
 ![Pipelinerun Overview](images/pipelinerun_overview.png)
 
-If you click on any of the tasks, you will be able to see the output / logs from that tasks
+If you click on any of the tasks, you will be able to see the output / logs from that task (supposing the run you are reviewing executed).
 
 ![Pipelinerun Logs](images/pipelinerun_logs.png)
 
