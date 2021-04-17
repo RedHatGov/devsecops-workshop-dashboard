@@ -241,12 +241,12 @@ mvn -version
 ```bash
 Apache Maven 3.6.3 (cecedd343002696d0abb50b32b541b8a6ba2883f)
 Maven home: /usr/share/maven
-Java version: 14.0.1, vendor: Oracle Corporation, runtime: /usr/java/openjdk-14
-Default locale: en_US, platform encoding: UTF-8
-OS name: "linux", version: "5.6.19-300.fc32.x86_64", arch: "amd64", family: "unix"
+openjdk version "16" 2021-03-16
+OpenJDK Runtime Environment (build 16+36-2231)
+OpenJDK 64-Bit Server VM (build 16+36-2231, mixed mode, sharing)
 ```
 
-OK, this container uses Java 14, but our tasks app was built with Java 8. Could this be the problem? Let's pull down our `tasks` git repo and see if we can build it with this Maven container. We're going to work out of `/tmp` to ensure our user has the necessary filesystem permissions:
+OK, this container uses Java 16, but our tasks app was built with Java 8. Could this be the problem? Let's pull down our `tasks` git repo and see if we can build it with this Maven container. We're going to work out of `/tmp` to ensure our user has the necessary filesystem permissions:
 
 ```execute
 curl https://gitea-server-devsecops.%cluster_subdomain%/%username%/openshift-tasks/archive/dso4.tar.gz | tar xz -C /tmp
@@ -292,7 +292,7 @@ Woo-hoo!!! We verified that the app source code is in our test container, and we
 
 ```
 
-It looks like we can't use Java 14 to  build our app after all! Let's go and see if `gcr.io/cloud-builders/mvn` offers alternative version tags in [Google's Container Registry](https://console.cloud.google.com/gcr/images/cloud-builders/GLOBAL/mvn?gcrImageListsize=30):
+It looks like we can't use Java 16 to  build our app after all! Let's go and see if `gcr.io/cloud-builders/mvn` offers alternative version tags in [Google's Container Registry](https://console.cloud.google.com/gcr/images/cloud-builders/GLOBAL/mvn?gcrImageListsize=30):
 
 ![Maven Container Images](images/grc_io_maven_images.png)
 
