@@ -2,7 +2,7 @@ The notion of Secure Software Factory is that of applying an assembly line appro
 
 In this workshop, you will use build orchestration tools such as Tekton, Kubernetes, and OpenShift to support implementing and integrating [continuous delivery (CD)][1] as the foundation of automating the various stages of the deployment lifecycle are represented – from development, multiple types of testing, user acceptance, staging, to production release.
 
-![Secure Software Factory](images/trusted_software_supply_chain.png)
+![Secure Software Factory](images/secure_software_factory.png)
 
 For many organizations, obtaining Authority to Operate (ATO) is an arduous process requiring hundreds of pages of documentation, and can prevent organizations from adopting continuous delivery practices for fear of falling out of compliance. Each phase in our Secure Software Factory will have a policy defining the stage gate for success and will generate a documentation artifact that will later be used as part of the [ATO process][2].
 
