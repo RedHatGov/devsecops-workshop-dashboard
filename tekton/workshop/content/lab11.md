@@ -6,7 +6,7 @@ In this lab we will add the **Image Builder** and **Build Container Image**  sta
 
 # OpenShift, Containers, and Container Images
 
-Containers are an important foundation for applications in building a Trusted Software Supply Chain.  We want a secure and blessed golden container image that our application will inherit security controls from.
+Containers are an important foundation for applications in building a Secure Software Factory.  We want a secure and blessed golden container image that our application will inherit security controls from.
 
 Containers are built using a layered approach. For example, to create a container of a Java web application, you could do so in multiple layers: the OS, the JVM, the web server, and the code itself.
 

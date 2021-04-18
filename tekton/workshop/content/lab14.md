@@ -1,6 +1,6 @@
 # Introduction
 
-In this lab, we will explore approaches to triggering the Trusted Software Supply chain with code check-ins
+In this lab, we will explore approaches to triggering the Secure Software Factory with code check-ins
 
 # Tekton Triggers Introduction
 

@@ -16,11 +16,11 @@ You will see the project dashboard which shows the "common infrastructure" for o
 - sonarqube - SonarQube is an open source static code analysis tool
 - some additional supporting deployments such as databases
 
-There are some other components for our pipeline that live inside other projects, for a number of reasons, but these are some exemplar components to make up our Trusted Software Supply Chain.
+There are some other components for our pipeline that live inside other projects, for a number of reasons, but these are some exemplar components to make up our Secure Software Factory.
 
 ![devsecops Project Deployments](images/devsecops-deployments.png)
 
-# The Flow of the Trusted Software Supply Chain
+# The Flow of the Secure Software Factory
 
 You may ask, "How am I going to build a CI/CD pipeline if I don't have a tool like Jenkins that builds CI/CD pipelines?" OpenShift Pipelines is the CI/CD tool (based on the upstream Tekton project) that will execute the project. We'll be using using cloud-native container-based tooling and the power of the Kubernetes container orchestrator to do execute our steps.
 
@@ -42,7 +42,7 @@ When the verification is complete, the "Deploy to Stage" pipeline will perform t
 - Clean up the artifacts from the previous version of the application
 - Deploy a new version of the application based on the newly tagged image into the %username%-stage project
 
-![OpenShift as a TSSC](images/openshift-pipeline.png)
+![OpenShift as a Secure Software Factory](images/openshift-pipeline.png)
 
 [1]: https://stackoverflow.com/questions/28608015/continuous-integration-vs-continuous-delivery-vs-continuous-deployment
 [2]: https://docs.openshift.com/container-platform/4.4/pipelines/understanding-openshift-pipelines.html

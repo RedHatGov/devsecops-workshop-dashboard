@@ -1,6 +1,6 @@
-# Triggering the Trusted Software Supply Chain
+# Triggering the Secure Software Factory
 
-Now that our triggers are in place, let's test out the supply chain by performing a little application development.
+Now that our triggers are in place, let's test out the software factory by performing a little application development.
 
 If you had a chance to check [SonarQube](https://sonarqube-devsecops.%cluster_subdomain%/dashboard?id=%username%-openshift-tasks) for the results of the static code analysis scan, you may have noticed that our **code coverage**, which is to say: *the percentage of code which is executed during unit testing*, comes in at a not-so-hot **16.3%**.
 
