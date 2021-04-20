@@ -72,6 +72,7 @@ spec:
     - name: gitea-event
       bindings:
         - name: dev-tekton-tasks-trigger-binding
+          value: Dev Tekton Tasks Trigger
       interceptors:
         - cel:
             filter: body.secret == "secret1234"
@@ -158,6 +159,7 @@ spec:
     - name: curl-event
       bindings:
         - name: tasks-stage-pipeline-trigger-binding
+          value: Tasks Stage Pipeline Trigger
       interceptors:
         - cel:
             filter: body.secret == "secret1234"
