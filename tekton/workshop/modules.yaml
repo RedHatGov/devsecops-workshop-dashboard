@@ -5,7 +5,7 @@ modules:
   lab01:
     name: Lab 01 - Welcome to OpenShift
   lab02:
-    name: Lab 02 - Trusted Software Supply Chain
+    name: Lab 02 - Secure Software Factory
   lab03:
     name: Lab 03 - DevSecOps Project overview
   lab04:
@@ -31,7 +31,7 @@ modules:
   lab14:
     name: Lab 14 - Setting Up Pipeline Triggers
   lab15:
-    name: Lab 15 - Activate the Software Supply Chain
+    name: Lab 15 - Activate the Secure Software Factory
   lab16:
     name: Lab 16 - Clair Vulnerability Scan
   lab17:
