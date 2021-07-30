@@ -20,10 +20,7 @@ EOF
 ```
 3. Create a project named **devsecops** for your pipeline tooling to live.
 ```bash
-oc new-project devsecops
-
-# Delete limit range, if created by a project template
-oc delete limitrange --all -n devsecops
+oc create ns devsecops; oc project devsecops
 ```
 4. In the OpenShift Web Console, navigate to **Operators -> OperatorHub** and search for "DevSecOps Operator" in the **devsecops** project. Select it and click **Install**
 5. Set **Installation Mode** to *A specific namespace on the cluster* and set **Installed Namespace** to *devsecops*.
@@ -36,18 +33,18 @@ It is recommended to generate a new service account before a workshop and delete
   * Copy value after `.dockerconfigjson`.
   * Create your secret with this value:
   ```bash
-    SECRET=<the value you copied in step 4>
+SECRET=<the value you copied in step 4>
 
-    oc apply -f - << EOF
-      kind: Secret
-      apiVersion: v1
-      metadata:
-        name: pull-secret
-        namespace: devsecops
-      data:
-        .dockerconfigjson: $SECRET
-      type: kubernetes.io/dockerconfigjson
-    EOF
+oc apply -f - << EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pull-secret
+  namespace: devsecops
+data:
+  .dockerconfigjson: $SECRET
+type: kubernetes.io/dockerconfigjson
+EOF
   ```
 8. On the DevSecOps Operator page, create a new `DevSecOpsWorkshop` CustomResource, setting the value of **Devsecopsworkshop -> Workshop Users -> numberOfUsers** as appropriate. 
 9. If you modified the namespace or name of your pull secret in Step 7, provide the corresponding values for **Devsecopsworkshop -> Pull Secret** as needed. Otherwise, you can leave this blank.
