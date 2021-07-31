@@ -32,7 +32,7 @@ It is recommended to generate a new service account before a workshop and delete
   * Click on the name of the service account, go to the 'OpenShift Secret' tab, click 'view its contents' 
   * Copy value after `.dockerconfigjson`.
   * Create your secret with this value:
-  ```bash
+```bash
 SECRET=<the value you copied in step 4>
 
 oc apply -f - << EOF
@@ -45,7 +45,7 @@ data:
   .dockerconfigjson: $SECRET
 type: kubernetes.io/dockerconfigjson
 EOF
-  ```
+```
 8. On the DevSecOps Operator page, create a new `DevSecOpsWorkshop` CustomResource, setting the value of **Devsecopsworkshop -> Workshop Users -> numberOfUsers** as appropriate. 
 9. If you modified the namespace or name of your pull secret in Step 7, provide the corresponding values for **Devsecopsworkshop -> Pull Secret** as needed. Otherwise, you can leave this blank.
 
